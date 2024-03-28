@@ -1,0 +1,34 @@
+package piece;
+
+import main.GamePanel;
+
+public class Bishop extends Piece {
+
+	public Bishop(int color, int col, int row) {
+		super(color, col, row);
+		
+		if(color == GamePanel.WHITE) {
+			image = getImage("/piece/wB");
+		}else {
+			image = getImage("/piece/bB");
+		}
+		
+	}
+	
+public boolean canMove(int targetCol, int targetRow) {
+	int dx = Math.abs(targetCol - preCol);
+    int dy = Math.abs(targetRow - preRow);
+		if(isWithinBoard(targetCol, targetRow) && (isSameSquare(targetCol, targetRow)==false))
+		{
+			if(dx == dy) {
+				if(isValidSquare(targetCol, targetRow) && isPieceOnStraightLine(targetCol, targetRow)==false) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	
+}

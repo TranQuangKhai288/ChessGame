@@ -1,0 +1,45 @@
+package piece;
+
+import main.GamePanel;
+
+public class Pawn extends Piece {
+
+	public Pawn(int color, int col, int row) {
+		super(color, col, row);
+		
+		if(color == GamePanel.WHITE) {
+			image = getImage("/piece/wP");
+		}else {
+			image = getImage("/piece/bP");
+		}
+		
+	}
+	
+	public boolean canMove(int targetCol, int targetRow) {
+	    int dx = Math.abs(targetCol - preCol);
+	    int dy = Math.abs(targetRow - preRow);
+
+	    if (isWithinBoard(targetCol, targetRow) && !isSameSquare(targetCol, targetRow)) {
+	        if (preCol == targetCol) {
+	            if (color == GamePanel.WHITE && targetRow == preRow - 1) {
+	                return isValidSquare(targetCol, targetRow) && !isPieceOnSquare(targetCol, targetRow);
+	            }
+	            else if (color == GamePanel.WHITE && targetRow == preRow - 2 && preRow == 6) {
+	                return isValidSquare(targetCol, targetRow) && !isPieceOnSquare(targetCol, targetRow) && !isPieceOnSquare(targetCol, preRow - 1);
+	            }
+	            else if (color == GamePanel.BLACK && targetRow == preRow + 1) {
+	                return isValidSquare(targetCol, targetRow) && !isPieceOnSquare(targetCol, targetRow);
+	            }
+	            else if (color == GamePanel.BLACK && targetRow == preRow + 2 && preRow == 1) {
+	                return isValidSquare(targetCol, targetRow) && !isPieceOnSquare(targetCol, targetRow) && !isPieceOnSquare(targetCol, preRow + 1);
+	            }
+	        }
+	        else if (dx == 1 && dy == 1) {
+	            return isValidSquare(targetCol, targetRow) && isOpponentPiece(targetCol, targetRow);
+	        }
+	    }
+
+	    return false;
+	}
+
+}
