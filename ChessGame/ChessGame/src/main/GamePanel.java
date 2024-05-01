@@ -19,12 +19,13 @@ import java.util.ArrayList;
 
 //class for create VIEW of game
 public class GamePanel extends JPanel implements Runnable {
-	public static final int WIDTH = 1100;
+	public static final int WIDTH = 800;
 	public static final int HEIGHT = 800;
 	final int FPS = 60;
 	Thread gameThread;
 	Board board = new Board();
 	Mouse mouse = new Mouse();
+
 	
 	//PIECES
 	public static ArrayList<Piece> pieces = new ArrayList<>();
@@ -46,6 +47,7 @@ public class GamePanel extends JPanel implements Runnable {
 	
 	//constructor
 	public GamePanel() {
+        setLayout(null);
 		setPreferredSize(new Dimension(WIDTH, HEIGHT));
 		setBackground(Color.black);
 		

@@ -3,6 +3,9 @@ package main;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -11,7 +14,15 @@ import java.awt.Color;
 
 public class DashBoard extends JPanel implements Runnable {
 	
+	private GamePanel gamePanel; // Reference to the GamePanel instance
+	JButton btnNewGame;
+	
+	public JButton getButtonNewGame() {
+		return btnNewGame;
+	}
+	
     public DashBoard() {
+    	this.gamePanel = gamePanel;
     	setLayout(null);
         setPreferredSize(new Dimension(600, 400));
     	
@@ -20,7 +31,7 @@ public class DashBoard extends JPanel implements Runnable {
          Image originalImage = new ImageIcon(this.getClass().getResource("/background.png")).getImage();
          Image scaledImage = originalImage.getScaledInstance(imgBackground.getWidth(), imgBackground.getHeight(), Image.SCALE_SMOOTH);
          
-         JButton btnNewGame = new JButton("New Game");
+         btnNewGame = new JButton("New Game");
          btnNewGame.setForeground(new Color(255, 255, 255));
          btnNewGame.setBackground(new Color(112, 128, 144));
          btnNewGame.setBounds(376, 130, 150, 30);
