@@ -16,11 +16,13 @@ public class DashBoard extends JPanel implements Runnable {
 	
 	private GamePanel gamePanel; // Reference to the GamePanel instance
 	JButton btnNewGame;
-	
+	JButton btnLoadGame;
 	public JButton getButtonNewGame() {
 		return btnNewGame;
 	}
-	
+	public JButton getButtunLoadGame() {
+		return btnLoadGame;
+	}
     public DashBoard() {
     	this.gamePanel = gamePanel;
     	setLayout(null);
@@ -37,16 +39,22 @@ public class DashBoard extends JPanel implements Runnable {
          btnNewGame.setBounds(376, 130, 150, 30);
          add(btnNewGame);
          
+         btnLoadGame = new JButton("Load Game");
+         btnLoadGame.setForeground(new Color(255, 255, 255));
+         btnLoadGame.setBackground(new Color(112, 128, 144));
+         btnLoadGame.setBounds(376, 170, 150, 30);
+         add(btnLoadGame);
+         
          JButton btnPlayOnline = new JButton("Play Online");
          btnPlayOnline.setForeground(Color.WHITE);
          btnPlayOnline.setBackground(new Color(112, 128, 144));
-         btnPlayOnline.setBounds(376, 170, 150, 30);
+         btnPlayOnline.setBounds(376, 210, 150, 30);
          add(btnPlayOnline);
          
          JButton btnPlayWithAI = new JButton("Play With AI");
          btnPlayWithAI.setForeground(Color.WHITE);
          btnPlayWithAI.setBackground(new Color(112, 128, 144));
-         btnPlayWithAI.setBounds(376, 210, 150, 30);
+         btnPlayWithAI.setBounds(376, 250, 150, 30);
          add(btnPlayWithAI);
          imgBackground.setIcon(new ImageIcon(scaledImage));
          add(imgBackground);

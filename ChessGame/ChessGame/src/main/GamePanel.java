@@ -9,6 +9,13 @@ import piece.Pawn;
 import piece.Piece;
 import piece.Queen;
 import piece.Rook;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+import com.google.gson.Gson;
+
+import api.APIService;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
@@ -17,8 +24,14 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.OutputStream;
 import java.util.ArrayList;
-
+import java.net.HttpURLConnection;
+import java.net.URL;
+import javax.swing.JButton;
+import piece.PieceData;
 //class for create VIEW of game
 public class GamePanel extends JPanel implements Runnable {
 	public static final int WIDTH = 1200;
@@ -28,7 +41,7 @@ public class GamePanel extends JPanel implements Runnable {
 	Board board = new Board();
 	Mouse mouse = new Mouse();
 
-	
+	JButton saveButton;
 	//PIECES
 	public static ArrayList<Piece> pieces = new ArrayList<>();
 	
@@ -64,8 +77,56 @@ public class GamePanel extends JPanel implements Runnable {
 		
 		setPieces();
 		copyPieces(pieces, simPieces);
+		initSaveButton();
 	}
 	
+	private void initSaveButton() {
+		saveButton = new JButton("SAVE");
+		saveButton.setBounds(WIDTH - 100, 10, 80, 30); // Position top right
+		saveButton.addActionListener(e -> sendPieces(simPieces));
+		add(saveButton);
+	}
+	
+	 public void sendPieces(ArrayList<Piece> pieces) {
+		 ArrayList<PieceData> pieceDataList = new ArrayList<>();
+	        for (Piece piece : pieces) {
+	        	String type = "";
+	        	 if (piece instanceof Rook) {
+	                 type = "Rook";
+	             } else if (piece instanceof King) {
+	                 type = "King";
+	             } else if (piece instanceof Queen) {
+	                 type = "Queen";
+	             } else if (piece instanceof Bishop) {
+	                 type = "Bishop";
+	             } else if (piece instanceof Knight) {
+	                 type = "Knight";
+	             } else if (piece instanceof Pawn) {
+	                 type = "Pawn";
+	             }
+	            PieceData pieceData = new PieceData(piece.col, piece.row, piece.color,type);
+	            pieceDataList.add(pieceData);
+	        }
+	        System.out.print(pieceDataList.size());    
+	        APIService.apiService.saveGame(pieceDataList)
+	        .enqueue(new Callback<Void>() {
+
+				@Override
+				public void onResponse(Call<Void> call, Response<Void> response) {
+	                if (response.isSuccessful()) {
+	                    System.out.println("Game saved successfully!");
+	                } else {
+	                    System.out.println("Error: " + response.code());
+	                }
+	            }
+				@Override
+				 public void onFailure(Call<Void> call, Throwable t) {
+	                t.printStackTrace();
+	            }
+	        	
+	        });
+	    }
+
 	public void setPieces() {
 		
 		//the White TEAM
