@@ -1,60 +1,27 @@
 package main;
 
 import javax.swing.*;
-import java.net.HttpURLConnection;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.awt.event.ActionListener;
-import java.net.URI;
-import java.net.URISyntaxException;
 
-public class Login extends JPanel implements Runnable {
+public class Login extends JPanel {
 
     private JTextField emailField;
     private JPasswordField passwordField;
-    
-    private void callAPI(String email, String password) {
-        try {
-            URL url = new URL("http://localhost:5000/auth/signIn");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setDoOutput(true);
+    private Runnable onSuccess;
+    private Runnable onRegister;
 
-            // Create JSON request body
-            String requestBody = String.format("{\"email\": \"%s\", \"password\": \"%s\"}", email, password);
+    public Login(Runnable onSuccess, Runnable onRegister) {
+        this.onSuccess = onSuccess;
+        this.onRegister = onRegister;
 
-            // Send request body
-            try (OutputStream outputStream = connection.getOutputStream()) {
-                byte[] input = requestBody.getBytes("utf-8");
-                outputStream.write(input, 0, input.length);
-            }
-
-            // Read response
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                // Handle response
-                System.out.println("Response: " + response.toString());
-            }
-
-            // Close connection
-            connection.disconnect();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            // Handle exception
-        }
-    }
-
-    public Login() {
         setPreferredSize(new Dimension(500, 500));
         setLayout(new GridBagLayout());
         setBackground(new Color(34, 45, 50)); // Dark background
@@ -113,29 +80,75 @@ public class Login extends JPanel implements Runnable {
         gbc.anchor = GridBagConstraints.CENTER;
         add(submitButton, gbc);
 
+        JButton registerButton = new JButton("Register");
+        registerButton.setFont(new Font("Serif", Font.BOLD, 18));
+        registerButton.setBackground(new Color(255, 215, 0)); // Gold color
+        registerButton.setForeground(Color.BLACK);
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        gbc.anchor = GridBagConstraints.CENTER;
+        add(registerButton, gbc);
+
         submitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String email = emailField.getText();
                 String password = new String(passwordField.getPassword());
-                
+
                 // Call the method to make the API request
                 callAPI(email, password);
             }
         });
+
+        registerButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (onRegister != null) {
+                    onRegister.run();
+                }
+            }
+        });
     }
 
-    @Override
-    public void run() {
-        JFrame frame = new JFrame("King Chess Login Page");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(new Login());
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-    }
+    private void callAPI(String email, String password) {
+        try {
+            URL url = new URL("http://localhost:5000/auth/signIn");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setDoOutput(true);
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Login());
+            // Create JSON request body
+            String requestBody = String.format("{\"email\": \"%s\", \"password\": \"%s\"}", email, password);
+
+            // Send request body
+            try (OutputStream outputStream = connection.getOutputStream()) {
+                byte[] input = requestBody.getBytes("utf-8");
+                outputStream.write(input, 0, input.length);
+            }
+
+            int status = connection.getResponseCode();
+            if (status == 200) {
+                // Successful login, run the onSuccess callback
+                if (onSuccess != null) {
+                    onSuccess.run();
+                }
+            } else {
+                // Handle unsuccessful login (e.g., show error message)
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    System.out.println("Error response: " + response.toString());
+                }
+            }
+
+            connection.disconnect();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            // Handle exception
+        }
     }
 }

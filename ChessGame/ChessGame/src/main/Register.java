@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
 public class Register extends JPanel implements Runnable {
 
     private JTextField usernameField;
@@ -17,44 +18,13 @@ public class Register extends JPanel implements Runnable {
     private JPasswordField passwordField;
     private JPasswordField confirmPasswordField;
     private JLabel errorLabel;
-    
-    private void callAPI(String username, String email, String password) {
-        try {
-            URL url = new URL("http://localhost:5000/auth/signUp");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setDoOutput(true);
+    private Runnable onSuccess;
+    private Runnable onBackToLogin;
 
-            // Create JSON request body
-            String requestBody = String.format("{\"name\": \"%s\", \"email\": \"%s\", \"password\": \"%s\"}", username, email, password);
+    public Register(Runnable onSuccess, Runnable onBackToLogin) {
+        this.onSuccess = onSuccess;
+        this.onBackToLogin = onBackToLogin;
 
-            // Send request body
-            try (OutputStream outputStream = connection.getOutputStream()) {
-                byte[] input = requestBody.getBytes("utf-8");
-                outputStream.write(input, 0, input.length);
-            }
-
-            // Read response
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                // Handle response
-                System.out.println("Response: " + response.toString());
-            }
-
-            // Close connection
-            connection.disconnect();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            // Handle exception
-        }
-    }
-
-    public Register() {
         setPreferredSize(new Dimension(500, 500));
         setLayout(new GridBagLayout());
         setBackground(new Color(34, 45, 50)); // Dark background
@@ -151,9 +121,16 @@ public class Register extends JPanel implements Runnable {
         gbc.gridx = 1;
         gbc.gridy = 6;
         add(errorLabel, gbc);
-        
-     
-        
+
+        // Back to Login button
+        JButton backButton = new JButton("Back to Login");
+        backButton.setFont(new Font("Serif", Font.BOLD, 18));
+        backButton.setBackground(new Color(255, 215, 0)); // Gold color
+        backButton.setForeground(Color.BLACK);
+        gbc.gridx = 1;
+        gbc.gridy = 7;
+        gbc.anchor = GridBagConstraints.CENTER;
+        add(backButton, gbc);
 
         submitButton.addActionListener(new ActionListener() {
             @Override
@@ -175,25 +152,77 @@ public class Register extends JPanel implements Runnable {
                     System.out.println("Email: " + email);
                     System.out.println("Password: " + password);
                     System.out.println("Password and Confirm Password match.");
-                    
+
                     // Call the method to make the API request
                     callAPI(username, email, password);
                 }
             }
         });
+
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (onBackToLogin != null) {
+                    onBackToLogin.run();
+                }
+            }
+        });
+    }
+
+    private void callAPI(String username, String email, String password) {
+        try {
+            URL url = new URL("http://localhost:5000/auth/signUp");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setDoOutput(true);
+
+            // Create JSON request body
+            String requestBody = String.format("{\"name\": \"%s\", \"email\": \"%s\", \"password\": \"%s\"}", username, email, password);
+
+            // Send request body
+            try (OutputStream outputStream = connection.getOutputStream()) {
+                byte[] input = requestBody.getBytes("utf-8");
+                outputStream.write(input, 0, input.length);
+            }
+
+            int status = connection.getResponseCode();
+            
+            if (status == 200) {
+                // Successful registration, run the onSuccess callback
+                if (onSuccess != null) {
+                    onSuccess.run();
+                }
+            } else {
+                // Handle unsuccessful registration (e.g., show error message)
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    System.out.println("Error response: " + response.toString());
+                }
+            }
+
+            connection.disconnect();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            // Handle exception
+        }
     }
 
     @Override
     public void run() {
         JFrame frame = new JFrame("Register Page");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(new Register());
+        frame.add(new Register(onSuccess, onBackToLogin));
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Register());
+        SwingUtilities.invokeLater(new Register(null, null));
     }
 }
