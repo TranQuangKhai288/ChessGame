@@ -12,6 +12,7 @@ public class Main {
         // Create placeholder for the Runnables to allow mutual referencing
         Runnable[] showLoginPanel = new Runnable[1];
         Runnable[] showRegisterPanel = new Runnable[1];
+        Runnable[] showForgotPasswordPanel = new Runnable[1];
 
         // Define the login panel
         showLoginPanel[0] = () -> {
@@ -41,7 +42,8 @@ public class Main {
                         window.setVisible(true);
                     });
                 },
-                showRegisterPanel[0] // On register button click
+                showRegisterPanel[0], // On register button click
+                showForgotPasswordPanel[0] // On forgot password button click
             );
 
             window.getContentPane().removeAll();
@@ -84,6 +86,19 @@ public class Main {
 
             window.getContentPane().removeAll();
             window.add(registerPanel);
+            window.pack();
+            window.setLocationRelativeTo(null);
+            window.setVisible(true);
+        };
+
+        // Define the forgot password panel
+        showForgotPasswordPanel[0] = () -> {
+            ForgotPassword forgotPasswordPanel = new ForgotPassword(
+                showLoginPanel[0] // On back to login button click
+            );
+
+            window.getContentPane().removeAll();
+            window.add(forgotPasswordPanel);
             window.pack();
             window.setLocationRelativeTo(null);
             window.setVisible(true);

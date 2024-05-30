@@ -11,18 +11,13 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class Login extends JPanel {
+public class ForgotPassword extends JPanel {
 
     private JTextField emailField;
-    private JPasswordField passwordField;
-    private Runnable onSuccess;
-    private Runnable onRegister;
-    private Runnable onForgotPassword;
+    private Runnable onBackToLogin;
 
-    public Login(Runnable onSuccess, Runnable onRegister, Runnable onForgotPassword) {
-        this.onSuccess = onSuccess;
-        this.onRegister = onRegister;
-        this.onForgotPassword = onForgotPassword;
+    public ForgotPassword(Runnable onBackToLogin) {
+        this.onBackToLogin = onBackToLogin;
 
         setPreferredSize(new Dimension(500, 500));
         setLayout(new GridBagLayout());
@@ -31,7 +26,7 @@ public class Login extends JPanel {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10); // Padding
 
-        JLabel titleLabel = new JLabel("King Chess Login");
+        JLabel titleLabel = new JLabel("Forgot Password");
         titleLabel.setFont(new Font("Serif", Font.BOLD, 30));
         titleLabel.setForeground(new Color(255, 215, 0)); // Gold color
         gbc.gridx = 0;
@@ -58,88 +53,52 @@ public class Login extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
         add(emailField, gbc);
 
-        JLabel passwordLabel = new JLabel("Password:");
-        passwordLabel.setFont(new Font("Serif", Font.PLAIN, 18));
-        passwordLabel.setForeground(Color.WHITE);
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.EAST;
-        add(passwordLabel, gbc);
-
-        passwordField = new JPasswordField(20);
-        passwordField.setFont(new Font("Serif", Font.PLAIN, 18));
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.WEST;
-        add(passwordField, gbc);
-
         JButton submitButton = new JButton("Submit");
         submitButton.setFont(new Font("Serif", Font.BOLD, 18));
         submitButton.setBackground(new Color(255, 215, 0)); // Gold color
         submitButton.setForeground(Color.BLACK);
         gbc.gridx = 1;
-        gbc.gridy = 3;
+        gbc.gridy = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         add(submitButton, gbc);
 
-        JButton registerButton = new JButton("Register");
-        registerButton.setFont(new Font("Serif", Font.BOLD, 18));
-        registerButton.setBackground(new Color(255, 215, 0)); // Gold color
-        registerButton.setForeground(Color.BLACK);
+        JButton backButton = new JButton("Back");
+        backButton.setFont(new Font("Serif", Font.BOLD, 18));
+        backButton.setBackground(new Color(255, 215, 0)); // Gold color
+        backButton.setForeground(Color.BLACK);
         gbc.gridx = 1;
-        gbc.gridy = 4;
+        gbc.gridy = 3;
         gbc.anchor = GridBagConstraints.CENTER;
-        add(registerButton, gbc);
-
-        JButton forgotPasswordButton = new JButton("Forgot Password");
-        forgotPasswordButton.setFont(new Font("Serif", Font.BOLD, 18));
-        forgotPasswordButton.setBackground(new Color(255, 215, 0)); // Gold color
-        forgotPasswordButton.setForeground(Color.BLACK);
-        gbc.gridx = 1;
-        gbc.gridy = 5;
-        gbc.anchor = GridBagConstraints.CENTER;
-        add(forgotPasswordButton, gbc);
+        add(backButton, gbc);
 
         submitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String email = emailField.getText();
-                String password = new String(passwordField.getPassword());
-
-                // Call the method to make the API request
-                callAPI(email, password);
+                callAPI(email);
             }
         });
 
-        registerButton.addActionListener(new ActionListener() {
+        backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (onRegister != null) {
-                    onRegister.run();
-                }
-            }
-        });
-
-        forgotPasswordButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (onForgotPassword != null) {
-                    onForgotPassword.run();
+                if (onBackToLogin != null) {
+                    onBackToLogin.run();
                 }
             }
         });
     }
 
-    private void callAPI(String email, String password) {
+    private void callAPI(String email) {
         try {
-            URL url = new URL("http://localhost:5000/auth/signIn");
+            URL url = new URL("http://localhost:5000/auth/resetPassword");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setDoOutput(true);
 
             // Create JSON request body
-            String requestBody = String.format("{\"email\": \"%s\", \"password\": \"%s\"}", email, password);
+            String requestBody = String.format("{\"email\": \"%s\"}", email);
 
             // Send request body
             try (OutputStream outputStream = connection.getOutputStream()) {
@@ -149,26 +108,25 @@ public class Login extends JPanel {
 
             int status = connection.getResponseCode();
             if (status == 200) {
-                // Successful login, run the onSuccess callback
-                if (onSuccess != null) {
-                    onSuccess.run();
-                }
+                // Successful request, show success message
+                JOptionPane.showMessageDialog(this, "Check your email for the new password", "Success", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                // Handle unsuccessful login (e.g., show error message)
+                // Handle unsuccessful request (e.g., show error message)
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
                     StringBuilder response = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) {
                         response.append(line);
                     }
-                    System.out.println("Error response: " + response.toString());
+                    JOptionPane.showMessageDialog(this, "Error: " + response.toString(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
 
             connection.disconnect();
         } catch (IOException ex) {
             ex.printStackTrace();
-            // Handle exception
+            JOptionPane.showMessageDialog(this, "Exception: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
+
