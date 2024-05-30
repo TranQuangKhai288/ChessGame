@@ -9,14 +9,11 @@ import piece.Pawn;
 import piece.Piece;
 import piece.Queen;
 import piece.Rook;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
-import api.APIService;
-
+import java.io.*;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -24,14 +21,14 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Map;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import javax.swing.JButton;
 import piece.PieceData;
+import java.util.List;
+
 //class for create VIEW of game
 public class GamePanel extends JPanel implements Runnable {
 	public static final int WIDTH = 1200;
@@ -40,7 +37,7 @@ public class GamePanel extends JPanel implements Runnable {
 	Thread gameThread;
 	Board board = new Board();
 	Mouse mouse = new Mouse();
-
+	String id;
 	JButton saveButton;
 	//PIECES
 	public static ArrayList<Piece> pieces = new ArrayList<>();
@@ -67,7 +64,8 @@ public class GamePanel extends JPanel implements Runnable {
 	int currentColor = WHITE;
 	
 	//constructor
-	public GamePanel() {
+	public GamePanel(String id) {
+		this.id = id;
         setLayout(null);
 		setPreferredSize(new Dimension(WIDTH, HEIGHT));
 		setBackground(Color.DARK_GRAY);
@@ -87,48 +85,67 @@ public class GamePanel extends JPanel implements Runnable {
 		add(saveButton);
 	}
 	
-	 public void sendPieces(ArrayList<Piece> pieces) {
-		 ArrayList<PieceData> pieceDataList = new ArrayList<>();
-	        for (Piece piece : pieces) {
-	        	String type = "";
-	        	 if (piece instanceof Rook) {
-	                 type = "Rook";
-	             } else if (piece instanceof King) {
-	                 type = "King";
-	             } else if (piece instanceof Queen) {
-	                 type = "Queen";
-	             } else if (piece instanceof Bishop) {
-	                 type = "Bishop";
-	             } else if (piece instanceof Knight) {
-	                 type = "Knight";
-	             } else if (piece instanceof Pawn) {
-	                 type = "Pawn";
-	             }
-	            PieceData pieceData = new PieceData(piece.col, piece.row, piece.color,type);
-	            pieceDataList.add(pieceData);
+	public void sendPieces(ArrayList<Piece> pieces) {
+	    ArrayList<PieceData> pieceDataList = new ArrayList<>();
+	    for (Piece piece : pieces) {
+	        String type = "";
+	        if (piece instanceof Rook) {
+	            type = "Rook";
+	        } else if (piece instanceof King) {
+	            type = "King";
+	        } else if (piece instanceof Queen) {
+	            type = "Queen";
+	        } else if (piece instanceof Bishop) {
+	            type = "Bishop";
+	        } else if (piece instanceof Knight) {
+	            type = "Knight";
+	        } else if (piece instanceof Pawn) {
+	            type = "Pawn";
 	        }
-	        System.out.print(pieceDataList.size());    
-	        APIService.apiService.saveGame(pieceDataList)
-	        .enqueue(new Callback<Void>() {
-
-				@Override
-				public void onResponse(Call<Void> call, Response<Void> response) {
-	                if (response.isSuccessful()) {
-	                    System.out.println("Game saved successfully!");
-	                } else {
-	                    System.out.println("Error: " + response.code());
-	                }
-	            }
-				@Override
-				 public void onFailure(Call<Void> call, Throwable t) {
-	                t.printStackTrace();
-	            }
-	        	
-	        });
+	        PieceData pieceData = new PieceData(piece.col, piece.row, piece.color, type);
+	        pieceDataList.add(pieceData);
 	    }
 
+	    Gson gson = new Gson();
+	    String json = gson.toJson(pieceDataList);
+
+	    try {
+	        URL url = new URL("http://localhost:5000/game/save");
+	        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	        connection.setRequestMethod("POST");
+	        connection.setRequestProperty("Content-Type", "application/json");
+	        connection.setDoOutput(true);
+
+	        // Gửi dữ liệu JSON
+	        try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8")) {
+	            writer.write(json);
+	            writer.flush();
+	        }
+
+	        // Đọc response
+	        int responseCode = connection.getResponseCode();
+	        if (responseCode == HttpURLConnection.HTTP_CREATED) {
+	            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
+	                StringBuilder response = new StringBuilder();
+	                String line;
+	                while ((line = reader.readLine()) != null) {
+	                    response.append(line.trim());
+	                }
+	                System.out.println("Response: " + response.toString());
+	            }
+	        } else {
+	            System.out.println("Error: " + responseCode);
+	        }
+
+	        // Đóng kết nối
+	        connection.disconnect();
+	    } catch (IOException ex) {
+	        ex.printStackTrace();
+	    }
+	}
 	public void setPieces() {
-		
+		if(id == null) {
+		System.out.print("is null");
 		//the White TEAM
 		pieces.add(new Pawn(WHITE, 0, 6));
 		pieces.add(new Pawn(WHITE, 1, 6));
@@ -164,7 +181,75 @@ public class GamePanel extends JPanel implements Runnable {
 		pieces.add(new Bishop(BLACK, 5, 0));
 		pieces.add(new Queen(BLACK, 3, 0));
 		pieces.add(new King(BLACK, 4, 0));
+		}
+		else {
+			pieces.clear();
+			 try {
+		            String url = "http://localhost:5000/game/loadById?id=" + this.id;
 
+		            // Tạo kết nối HTTP
+		            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+		            connection.setRequestMethod("GET");
+
+		            // Đọc dữ liệu từ response
+		            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		            StringBuilder response = new StringBuilder();
+		            String line;
+		            while ((line = reader.readLine()) != null) {
+		                response.append(line);
+		            }
+		            reader.close();
+
+		            // In ra dữ liệu game nhận được từ response
+		            System.out.println(response.toString());
+		            // Tạo một đối tượng Gson
+		            Gson gson = new Gson();
+
+		            // Chuyển đổi dữ liệu JSON thành một đối tượng Map<String, Object>
+		            java.lang.reflect.Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
+		            Map<String, Object> jsonDataMap = gson.fromJson(response.toString(), mapType);
+
+		            // Lấy danh sách các đối tượng Piece từ dữ liệu trả về từ backend
+		            Map<String, Object> gameData = (Map<String, Object>) jsonDataMap.get("game");
+		            List<Map<String, Object>> listPieces = (List<Map<String, Object>>) gameData.get("pieces");
+
+		            // Tạo các đối tượng Piece từ danh sách pieces
+		            for (Map<String, Object> pieceData : listPieces) {
+		                int col = ((Double) pieceData.get("col")).intValue();
+		                int row = ((Double) pieceData.get("row")).intValue();
+		                int color = ((Double) pieceData.get("color")).intValue();
+		                String type = (String) pieceData.get("type");
+
+		                // Tạo đối tượng Piece tương ứng với dữ liệu từ backend
+		                Piece piece = createPiece(color, type, col, row);
+
+		                pieces.add(piece);
+		            }
+		            // Đóng kết nối
+		            connection.disconnect();
+		            
+		        } catch (IOException e) {
+		            e.printStackTrace();
+		        }
+		}
+	}
+	private static Piece createPiece(int color, String type, int col, int row) {
+	    switch (type) {
+	        case "Pawn":
+	            return new Pawn(color, col, row);
+	        case "Rook":
+	            return new Rook(color, col, row);
+	        case "Knight":
+	            return new Knight(color, col, row);
+	        case "Bishop":
+	            return new Bishop(color, col, row);
+	        case "Queen":
+	            return new Queen(color, col, row);
+	        case "King":
+	            return new King(color, col, row);
+	        default:
+	            throw new IllegalArgumentException("Invalid piece type: " + type);
+	    }
 	}
 
 	
@@ -179,7 +264,6 @@ public class GamePanel extends JPanel implements Runnable {
 	public void launchGame() {
 		gameThread = new Thread(this);
 		gameThread.start();
-		
 	}
 	
 	
