@@ -1,5 +1,6 @@
 package main;
 
+import javax.swing.JButton;
 import javax.swing.JPanel;
 
 import piece.Bishop;
@@ -18,6 +19,18 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.util.ArrayList;
+import piece.PieceData;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.util.ArrayList;
+import java.util.Map;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.List;
+import java.io.OutputStreamWriter;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 //class for create VIEW of game
 public class GamePanel extends JPanel implements Runnable {
@@ -27,8 +40,8 @@ public class GamePanel extends JPanel implements Runnable {
 	Thread gameThread;
 	Board board = new Board();
 	Mouse mouse = new Mouse();
-
-	
+	String id;
+	JButton saveButton;
 	//PIECES
 	public static ArrayList<Piece> pieces = new ArrayList<>();
 	
@@ -54,18 +67,82 @@ public class GamePanel extends JPanel implements Runnable {
 	int currentColor = WHITE;
 	
 	//constructor
-	public GamePanel() {
+	public GamePanel(String id) {
+		this.id = id;
         setLayout(null);
 		setPreferredSize(new Dimension(WIDTH, HEIGHT));
 		setBackground(Color.DARK_GRAY);
 		
 		addMouseMotionListener(mouse);
 		addMouseListener(mouse);
-		
+		initSaveButton();
 		setPieces();
 		copyPieces(pieces, simPieces);
 	}
-	
+	private void initSaveButton() {
+		saveButton = new JButton("SAVE");
+		saveButton.setBounds(WIDTH - 100, 10, 80, 30); // Position top right
+		saveButton.addActionListener(e -> sendPieces(simPieces));
+		add(saveButton);
+	}
+	public void sendPieces(ArrayList<Piece> pieces) {
+	    ArrayList<PieceData> pieceDataList = new ArrayList<>();
+	    for (Piece piece : pieces) {
+	        String type = "";
+	        if (piece instanceof Rook) {
+	            type = "Rook";
+	        } else if (piece instanceof King) {
+	            type = "King";
+	        } else if (piece instanceof Queen) {
+	            type = "Queen";
+	        } else if (piece instanceof Bishop) {
+	            type = "Bishop";
+	        } else if (piece instanceof Knight) {
+	            type = "Knight";
+	        } else if (piece instanceof Pawn) {
+	            type = "Pawn";
+	        }
+	        PieceData pieceData = new PieceData(piece.col, piece.row, piece.color, type);
+	        pieceDataList.add(pieceData);
+	    }
+
+	    Gson gson = new Gson();
+	    String json = gson.toJson(pieceDataList);
+
+	    try {
+	        URL url = new URL("http://localhost:5000/game/save");
+	        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	        connection.setRequestMethod("POST");
+	        connection.setRequestProperty("Content-Type", "application/json");
+	        connection.setDoOutput(true);
+
+	        // Gửi dữ liệu JSON
+	        try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8")) {
+	            writer.write(json);
+	            writer.flush();
+	        }
+
+	        // Đọc response
+	        int responseCode = connection.getResponseCode();
+	        if (responseCode == HttpURLConnection.HTTP_CREATED) {
+	            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
+	                StringBuilder response = new StringBuilder();
+	                String line;
+	                while ((line = reader.readLine()) != null) {
+	                    response.append(line.trim());
+	                }
+	                System.out.println("Response: " + response.toString());
+	            }
+	        } else {
+	            System.out.println("Error: " + responseCode);
+	        }
+
+	        // Đóng kết nối
+	        connection.disconnect();
+	    } catch (IOException ex) {
+	        ex.printStackTrace();
+	    }
+	}
 	public void setPieces() {
 		
 		//the White TEAM
@@ -103,10 +180,115 @@ public class GamePanel extends JPanel implements Runnable {
 		pieces.add(new Bishop(BLACK, 5, 0));
 		pieces.add(new Queen(BLACK, 3, 0));
 		pieces.add(new King(BLACK, 4, 0));
+		if (id == null) {
+			pieces.clear();
+			System.out.print("is null");
+			// the White TEAM
+			pieces.add(new Pawn(WHITE, 0, 6));
+			pieces.add(new Pawn(WHITE, 1, 6));
+			pieces.add(new Pawn(WHITE, 2, 6));
+			pieces.add(new Pawn(WHITE, 3, 6));
+			pieces.add(new Pawn(WHITE, 4, 6));
+			pieces.add(new Pawn(WHITE, 5, 6));
+			pieces.add(new Pawn(WHITE, 6, 6));
+			pieces.add(new Pawn(WHITE, 7, 6));
+			pieces.add(new Rook(WHITE, 0, 7));
+			pieces.add(new Rook(WHITE, 7, 7));
+			pieces.add(new Knight(WHITE, 1, 7));
+			pieces.add(new Knight(WHITE, 6, 7));
+			pieces.add(new Bishop(WHITE, 2, 7));
+			pieces.add(new Bishop(WHITE, 5, 7));
+			pieces.add(new Queen(WHITE, 3, 7));
+			pieces.add(new King(WHITE, 4, 7));
 
+			// the Black TEAM
+			pieces.add(new Pawn(BLACK, 0, 1));
+			pieces.add(new Pawn(BLACK, 1, 1));
+			pieces.add(new Pawn(BLACK, 2, 1));
+			pieces.add(new Pawn(BLACK, 3, 1));
+			pieces.add(new Pawn(BLACK, 4, 1));
+			pieces.add(new Pawn(BLACK, 5, 1));
+			pieces.add(new Pawn(BLACK, 6, 1));
+			pieces.add(new Pawn(BLACK, 7, 1));
+			pieces.add(new Rook(BLACK, 0, 0));
+			pieces.add(new Rook(BLACK, 7, 0));
+			pieces.add(new Knight(BLACK, 1, 0));
+			pieces.add(new Knight(BLACK, 6, 0));
+			pieces.add(new Bishop(BLACK, 2, 0));
+			pieces.add(new Bishop(BLACK, 5, 0));
+			pieces.add(new Queen(BLACK, 3, 0));
+			pieces.add(new King(BLACK, 4, 0));
+		} else {
+			pieces.clear();
+			try {
+				String url = "http://localhost:5000/game/loadById?id=" + this.id;
+
+				// Tạo kết nối HTTP
+				HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+				connection.setRequestMethod("GET");
+
+				// Đọc dữ liệu từ response
+				BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+				StringBuilder response = new StringBuilder();
+				String line;
+				while ((line = reader.readLine()) != null) {
+					response.append(line);
+				}
+				reader.close();
+
+				// In ra dữ liệu game nhận được từ response
+				System.out.println(response.toString());
+				// Tạo một đối tượng Gson
+				Gson gson = new Gson();
+
+				// Chuyển đổi dữ liệu JSON thành một đối tượng Map<String, Object>
+				java.lang.reflect.Type mapType = new TypeToken<Map<String, Object>>() {
+				}.getType();
+				Map<String, Object> jsonDataMap = gson.fromJson(response.toString(), mapType);
+
+				// Lấy danh sách các đối tượng Piece từ dữ liệu trả về từ backend
+				Map<String, Object> gameData = (Map<String, Object>) jsonDataMap.get("game");
+				List<Map<String, Object>> listPieces = (List<Map<String, Object>>) gameData.get("pieces");
+
+				// Tạo các đối tượng Piece từ danh sách pieces
+				for (Map<String, Object> pieceData : listPieces) {
+					int col = ((Double) pieceData.get("col")).intValue();
+					int row = ((Double) pieceData.get("row")).intValue();
+					int color = ((Double) pieceData.get("color")).intValue();
+					String type = (String) pieceData.get("type");
+
+					// Tạo đối tượng Piece tương ứng với dữ liệu từ backend
+					Piece piece = createPiece(color, type, col, row);
+
+					pieces.add(piece);
+				}
+				// Đóng kết nối
+				connection.disconnect();
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
-	
+	private static Piece createPiece(int color, String type, int col, int row) {
+		switch (type) {
+			case "Pawn":
+				return new Pawn(color, col, row);
+			case "Rook":
+				return new Rook(color, col, row);
+			case "Knight":
+				return new Knight(color, col, row);
+			case "Bishop":
+				return new Bishop(color, col, row);
+			case "Queen":
+				return new Queen(color, col, row);
+			case "King":
+				return new King(color, col, row);
+			default:
+				throw new IllegalArgumentException("Invalid piece type: " + type);
+		}
+	}
 	private void copyPieces(ArrayList<Piece> source, ArrayList<Piece> target) {
 		target.clear();
 		for(int i = 0; i < source.size(); i++) {
