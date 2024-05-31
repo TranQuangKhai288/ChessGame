@@ -10,8 +10,10 @@ public class King extends Piece {
 		type = Type.KING;
 		if(color == GamePanel.WHITE) {
 			image = getImage("/piece/wK");
+			symbol = 'K';
 		}else {
 			image = getImage("/piece/bK");
+			symbol = 'k';
 		}
 		
 	}

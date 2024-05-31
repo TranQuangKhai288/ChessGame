@@ -18,6 +18,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.io.IOException;
 import java.util.ArrayList;
 import piece.PieceData;
 import com.google.gson.Gson;
@@ -42,18 +43,42 @@ public class GamePanel extends JPanel implements Runnable {
 	Mouse mouse = new Mouse();
 	String id;
 	JButton saveButton;
+	
+	//CHESS BOARD
+	char[][] chessBoard = {
+	        {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
+	        {'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'},
+	        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+	        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+	        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+	        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+	        {'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'},
+	        {'R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'}
+	    };
+	
 	//PIECES
 	public static ArrayList<Piece> pieces = new ArrayList<>();
+	public Piece wKing, wRookKingSide, wRookQueenSide, bKing, bRookKingSide, bRookQueenSide;
+	
 	
 	//this array will contain the pieces currently on the board
 	//use this array
 	public static ArrayList<Piece> simPieces = new ArrayList<>();
 	ArrayList<Piece> promoPieces = new ArrayList<>();
 	
-	Piece activeP, checkingP;
+	Piece activeP, checkingP, engineP;
 	public static Piece castlingP;
 	
+	//AI
+	public ChessEngine chessEngine;
+	int modeAI = 0;
+	boolean playerTurn = true;
 	
+	//STATE
+	String targetEnPassant = "-";
+    int halfmoveClock = 0;
+    int fullmoveNumber = 1;
+
 	//COLOR
 	public static final int WHITE = 0;
 	public static final int BLACK = 1;
@@ -269,6 +294,15 @@ public class GamePanel extends JPanel implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		
+		//For tracking King and Rook
+		wKing = pieces.get(15);
+		wRookQueenSide = pieces.get(8);
+		wRookKingSide = pieces.get(9);
+		
+		bKing = pieces.get(31);
+		bRookQueenSide = pieces.get(24);
+		bRookKingSide = pieces.get(25);
 	}
 
 	private static Piece createPiece(int color, String type, int col, int row) {
@@ -297,10 +331,84 @@ public class GamePanel extends JPanel implements Runnable {
 		
 	}
 	
+	public String generateFEN() {
+	    StringBuilder fen = new StringBuilder();
+
+	    for (int i = 0; i < 8; i++) {
+	        int emptySquares = 0;
+	        for (int j = 0; j < 8; j++) {
+	            char piece = chessBoard[i][j];
+	            if (piece == ' ') {
+	                emptySquares++;
+	            } else {
+	                if (emptySquares > 0) {
+	                    fen.append(emptySquares);
+	                    emptySquares = 0;
+	                }
+	                fen.append(piece);
+	            }
+	        }
+	        if (emptySquares > 0) {
+	            fen.append(emptySquares);
+	        }
+	        if (i < 7) {
+	            fen.append('/');
+	        }
+	    }
+
+	    //the active color
+	    fen.append(' ');
+	    fen.append(currentColor == WHITE ? 'w' : 'b');
+
+	    //castling availability
+	    fen.append(' ');
+	    boolean whiteKingSide = false;
+	    boolean whiteQueenSide = false;
+	    boolean blackKingSide = false;
+	    boolean blackQueenSide = false;
+	    
+	    if(!wKing.moved && !wRookKingSide.moved && chessBoard[7][7] == 'R')
+	    	whiteKingSide = true;
+	    if(!wKing.moved && !wRookQueenSide.moved && chessBoard[7][0] == 'R')
+	    	whiteQueenSide = true; 
+	    
+	    if(!bKing.moved && !bRookKingSide.moved && chessBoard[0][7] == 'r')
+	    	blackKingSide = true;
+	    if(!bKing.moved && !bRookQueenSide.moved && chessBoard[0][0] == 'r')
+	    	blackQueenSide = true; 
+    
+	    if (whiteKingSide) {
+	        fen.append('K');
+	    }
+	    if (whiteQueenSide) {
+	        fen.append('Q');
+	    }
+	    if (blackKingSide) {
+	        fen.append('k');
+	    }
+	    if (blackQueenSide) {
+	        fen.append('q');
+	    }
+	    if (!whiteKingSide && !whiteQueenSide && !blackKingSide && !blackQueenSide) {
+	        fen.append('-');
+	    }
+
+	    //en passant target square
+	    fen.append(" "+ targetEnPassant);
+
+	    //halfmove clock
+	    fen.append(" " + halfmoveClock);
+
+	    //fullmove number
+	    fen.append(" "+ fullmoveNumber);
+
+	    return fen.toString();
+	}
+
+	
 	public void launchGame() {
 		gameThread = new Thread(this);
 		gameThread.start();
-		
 	}
 	
 	
@@ -326,111 +434,261 @@ public class GamePanel extends JPanel implements Runnable {
 	}
 	
 	private void update() {
-		//Mouse Button PRESSED
-		
-		if(promotion) {
-			promoting();
-		}else if(gameover == false && stalemate == false) {
-			if(mouse.pressed) {
-				if(activeP == null) {
-					//if the activeP is null, check if you can pick up a piece
-					for(Piece piece : simPieces) {
-						if(piece.color == currentColor &&
-						piece.col == mouse.x/Board.SQUARE_SIZE &&
-						piece.row == mouse.y/Board.SQUARE_SIZE)
-						{
-							activeP = piece;
-						}
-					}
-				}
-				else {
-					//if the player is holding a piece, simulate the move
-					simulate();
-				}
-			}
-			//Mouse Button RLEASED
-			if(mouse.pressed == false) {
-				if(activeP !=null) {
-					if(validSquare) {
-						//MOVE CONFIRM
-						//Update the piece list
-						copyPieces(simPieces, pieces);
-						activeP.updatePosition();
-						if(castlingP !=null) {
-							castlingP.updatePosition();	
-						}
-						
-						if(isKingInCheck()&&isCheckmate()) {
-							gameover=true;
-							
-						}
-						else if(isStalemate()&& isKingInCheck() == false) {
-							stalemate = true;
-						}
-						else {
-							if(canPromote()) {
-								promotion = true;
-							}else {
-								changePlayer();
+		//Mouse Button PRESSED	
+		if (playerTurn == true) {
+			if(promotion) {
+				promoting();
+			}else if(gameover == false && stalemate == false) {
+				
+				if(mouse.pressed) {
+					
+					if(activeP == null) {
+						//if the activeP is null, check if you can pick up a piece
+						for(Piece piece : simPieces) {
+							if(piece.color == currentColor &&
+							piece.col == mouse.x/Board.SQUARE_SIZE &&
+							piece.row == mouse.y/Board.SQUARE_SIZE)
+							{
+								activeP = piece;
 							}
 						}
-						
-//						if(canPromote()) {
-//							promotion = true;
-//						}else {
-//							changePlayer();
-//						}
-
-					}else {
-						copyPieces(simPieces, pieces);
-						activeP.resetPosition();
-						activeP = null;
 					}
-					
+					else {
+						//if the player is holding a piece, simulate the move
+						simulate();
+					}
 				}
-			}
+				//Mouse Button RLEASED
+				if(mouse.pressed == false) {
+					if(activeP !=null) {
+						System.out.println("VALID: "+ validSquare);
+						if(validSquare) {
+							//MOVE CONFIRM
+							//Update the piece list
+							copyPieces(simPieces, pieces);
+						    chessBoard[activeP.preRow][activeP.preCol] = ' ';
+					        if(activeP.hittingP != null)
+					        	chessBoard[activeP.hittingP.row][activeP.hittingP.col] = ' ';
+						    chessBoard[activeP.row][activeP.col] = activeP.symbol;		    
+						    
+						    
+							//En Passant string for FEN
+							if(activeP.type == Type.PAWN) {
+							    if(Math.abs(activeP.row-activeP.preRow)==2) {
+							        char col = (char) ('a' + activeP.col);
+							        int row = 7 - (activeP.row + activeP.preRow)/2 + 1; 
+							        targetEnPassant = "" + col + row;
+							    }
+							}
+							else
+								targetEnPassant = "-";
+							
+							//halfmove string for FEN
+							if (activeP.type == Type.PAWN || activeP.hittingP != null) {
+					            halfmoveClock = 0;
+					        } else {
+					            halfmoveClock++;
+					        }
+							
+							//fullmove string for FEN
+							if(activeP.color == 1)
+								fullmoveNumber++;
+									
+							activeP.updatePosition();
+							
+							if(castlingP !=null) {
+								castlingP.updatePosition();	
+							}
+							
+							//
+							if(isKingInCheck()&&isCheckmate()) {
+								gameover=true;								
+							}
+							else if(isStalemate()&& isKingInCheck() == false) {
+								stalemate = true;
+							}
+							else {
+								if(canPromote()) {
+									promotion = true;
+								}else {			
+									changePlayer();	
+									
+								}
+							}
+							
+						}else {
+							copyPieces(pieces, simPieces);
+							activeP.resetPosition();
+							activeP = null;
+						}
+						
+					}
+				}
+			}		
+			
 		}
+		if (playerTurn == false && gameover == false){
+			engineMove();			
+	}
+}
+	public void engineMove(){
+		String fen = generateFEN();
+        System.out.println(fen);
+
+        chessEngine.setBoardPosition(fen);
+        try {
+            String bestMove = chessEngine.getBestMove();
+
+            int startCol = bestMove.charAt(0) - 'a';
+            int startRow = 8 - Character.getNumericValue(bestMove.charAt(1));
+            int endCol = bestMove.charAt(2) - 'a';
+            int endRow = 8 - Character.getNumericValue(bestMove.charAt(3));
+            char symbolP = chessBoard[startRow][startCol];
+            
+            for(Piece piece : simPieces) 
+				if(piece.symbol == symbolP)
+				{
+					if(piece.col == startCol && piece.row == startRow)
+					{
+						engineP = piece;
+						break;
+					}
+				}
+            
+		    engineP.hittingP = engineP.getHittingP(endCol, endRow);
+
+		    engineP.canMove(endCol, endRow);
+		    chessBoard[engineP.row][engineP.col] = ' ';
+		    engineP.col = endCol;
+		    engineP.row = endRow;
+		    if(engineP.hittingP != null) {
+		    	chessBoard[engineP.hittingP.row][engineP.hittingP.col] = ' ';
+		    }
+		    chessBoard[engineP.row][engineP.col] = engineP.symbol;
+//			System.out.println(engineP.type);
+		    	    		
+
+		    engineP.updatePosition();   
+//			System.out.println(engineP.hittingP);
+		    
+		    if (engineP.type == Type.PAWN || engineP.hittingP != null) {
+	            halfmoveClock = 0;
+	        } else {
+	            halfmoveClock++;
+	        }   
+			
+			
+			if (engineP.type == Type.KING) {
+				if(endCol == 2)	{
+					if(currentColor == 0)
+						castlingP = wRookQueenSide;
+					else
+						castlingP = bRookQueenSide;
+				}
+				else if(endCol == 6) {
+					if(currentColor == 0)
+						castlingP = wRookKingSide;
+					else
+						castlingP = bRookKingSide;
+				}
+				checkCastling();
+
+				if (castlingP != null) {
+					castlingP.updatePosition();
+					castlingP = null;
+				}			
+			}
+			
+			if(engineP.hittingP != null) {
+	            simPieces.remove(engineP.hittingP.getIndex());
+				copyPieces(simPieces, pieces);
+	        }  
+		    //For promoting
+		    if(engineP.type == Type.PAWN)
+		    	if(engineP.row == 0 || engineP.row == 7)
+		    	{
+		            simPieces.remove(engineP.getIndex());
+
+		    		char promotePSymbol = bestMove.charAt(4);
+		    		
+		    		if (promotePSymbol == 'n' || promotePSymbol == 'N') 
+		    			simPieces.add(new Knight(currentColor, endCol, endRow));
+		    		else if (promotePSymbol == 'b' || promotePSymbol == 'B')
+		    			simPieces.add(new Bishop(currentColor, endCol, endRow));
+		    		else if (promotePSymbol == 'r' || promotePSymbol == 'R')
+		    			simPieces.add(new Rook(currentColor, endCol, endRow));
+		    		else if (promotePSymbol == 'q' || promotePSymbol == 'Q')
+		    			simPieces.add(new Queen(currentColor, endCol, endRow));	
+		    		
+					copyPieces(simPieces, pieces);
+		    		chessBoard[endRow][endCol] = promotePSymbol;
+		    	}
+		    
+		    activeP = engineP;
+		    
+		    if(isKingInCheck()&&isCheckmate()) {
+				gameover=true;	
+			}
+			else if(isStalemate()&& isKingInCheck() == false) {
+				stalemate = true;
+			}
+			else {
+				changePlayer();	
+			}
+		    
+		    activeP = null;
+			engineP = null;
+
+			fullmoveNumber++;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 	}
 	
 	public void simulate() {
-		canMove = false;
-		validSquare = false;
-		
-		copyPieces(pieces, simPieces);
-		
-		//reset the castling piece's position
-		if(castlingP != null) {
-			castlingP.col = castlingP.preCol;
-			castlingP.x = castlingP.getX(castlingP.col);
-			castlingP = null;
-		}
-		
-		//if a piece is being held, update its position
-		activeP.x = mouse.x - Board.HALF_SQUARE_SIZE;
-		activeP.y= mouse.y- Board.HALF_SQUARE_SIZE;
-		
-		activeP.col = activeP.getCol(activeP.x);
-		activeP.row = activeP.getRow(activeP.y);
-		
-		//check if the piece is hovering over a reachable square
-		if(activeP.canMove(activeP.col, activeP.row)) {
-			canMove = true;
-			//validSquare = true;
-			// if hitting a piece, remove this piece from the list
-			if(activeP.hittingP != null) {
-				simPieces.remove(activeP.hittingP.getIndex());
-			}
-			
-			checkCastling();
-			
-			if(isIllegal(activeP)==false && opponentCanCaptureKing()==false) {
-				validSquare = true;
-			}
-			
-			//validSquare = true;
-				
-		}
+	    canMove = false;
+	    validSquare = false;
+	    
+	    copyPieces(pieces, simPieces);
+	    
+	    //reset the castling piece's position
+	    if(castlingP != null) {
+	        castlingP.col = castlingP.preCol;
+	        castlingP.x = castlingP.getX(castlingP.col);
+	        castlingP = null;
+	    }
+
+	    //if a piece is being held, update its position
+	    activeP.x = mouse.x - Board.HALF_SQUARE_SIZE;
+	    activeP.y= mouse.y- Board.HALF_SQUARE_SIZE;
+
+	    // Update the chessBoard array
+	    activeP.col = activeP.getCol(activeP.x);
+	    activeP.row = activeP.getRow(activeP.y);
+	    // Update the chessBoard array
+
+	    //check if the piece is hovering over a reachable square
+	    if(activeP.canMove(activeP.col, activeP.row)) {
+	        canMove = true;
+	        //validSquare = true;
+	        
+	        // if hitting a piece, remove this piece from the list
+	        if(activeP.hittingP != null) {
+	            // Update the chessBoard array
+	            simPieces.remove(activeP.hittingP.getIndex());
+	        }   
+	        
+	        checkCastling();
+
+	        if(isIllegal(activeP)==false && opponentCanCaptureKing()==false) {
+	            validSquare = true;
+	        }
+
+	        //validSquare = true;
+	    }
 	}
+
 	
 	private boolean isStalemate() {
 		
@@ -450,8 +708,9 @@ public class GamePanel extends JPanel implements Runnable {
 	}
 	
 	private void checkCastling() {
-		
 		if(castlingP != null) {
+			chessBoard[castlingP.row][castlingP.col] = ' ';
+
 			if(castlingP.col ==0) {
 				castlingP.col +=3;
 			}
@@ -460,6 +719,7 @@ public class GamePanel extends JPanel implements Runnable {
 				
 			}
 			castlingP.x = castlingP.getX(castlingP.col);
+			chessBoard[castlingP.row][castlingP.col] = castlingP.symbol;
 		}
 	}
 
@@ -626,7 +886,11 @@ public class GamePanel extends JPanel implements Runnable {
 				}
 			}
 		}
+
 		activeP = null;
+		
+		if(modeAI == 1)
+			playerTurn = !playerTurn;
 	}
 	
 	private boolean canPromote() {
@@ -693,11 +957,18 @@ public class GamePanel extends JPanel implements Runnable {
 	private boolean isKingInCheck() {
 		Piece king = getKing(true);
 		
-		if(activeP.canMove(king.col, king.row)) {
-			checkingP = activeP;
-			return true;
-		}else {
-			checkingP = null;
+		for(Piece piece : simPieces) {
+			if(piece.color == currentColor) {
+				if(piece.canMove(king.col, king.row)) {
+					System.out.println(piece);
+
+					checkingP = piece;
+					validSquare = false;
+					return true;
+				}else {
+					checkingP = null;
+				}
+			}
 		}
 		
 		return false;
@@ -727,10 +998,12 @@ public class GamePanel extends JPanel implements Runnable {
 		Graphics2D g2 = (Graphics2D)g;
 		//Draw the board
 		board.draw(g2);
-		//Draw the pieces
-		for(Piece p : simPieces) {
-			p.draw(g2);
-		}	
+		
+		ArrayList<Piece> simPiecesCopy = new ArrayList<>(simPieces);
+	    //Draw the pieces
+	    for(Piece p : simPiecesCopy) {
+	        p.draw(g2);
+	    }   
 		if(activeP != null) {
 			if(canMove) {
 				if(isIllegal(activeP) || opponentCanCaptureKing()) {
@@ -764,7 +1037,7 @@ public class GamePanel extends JPanel implements Runnable {
 		else {
 			if(currentColor == WHITE) {
 				g2.drawString("White's Turn", 840, 550);
-				if(checkingP != null && checkingP.color == BLACK) {
+				if(checkingP != null && checkingP.color == BLACK && validSquare == false) {
 					g2.setColor(Color.red);
 
 					g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,0.7f));
@@ -773,7 +1046,7 @@ public class GamePanel extends JPanel implements Runnable {
 				}
 			}else {
 				g2.drawString("Black's Turn", 840, 250);
-				if(checkingP != null && checkingP.color == WHITE) {
+				if(checkingP != null && checkingP.color == WHITE && validSquare == false) {
 					g2.setColor(Color.red);
 					g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,0.7f));
 					g2.fillRect(getKing(false).col*Board.SQUARE_SIZE, getKing(false).row*Board.SQUARE_SIZE, Board.SQUARE_SIZE, Board.SQUARE_SIZE);

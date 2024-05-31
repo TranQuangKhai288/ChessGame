@@ -12,11 +12,14 @@ public class Pawn extends Piece {
 		
 		if(color == GamePanel.WHITE) {
 			image = getImage("/piece/wP");
+			symbol = 'P';
 		}else {
 			image = getImage("/piece/bP");
+			symbol = 'p';
 		}
 		
 	}
+	
 	
 	public boolean canMove(int targetCol, int targetRow) {
 	    int dx = Math.abs(targetCol - preCol);

@@ -10,8 +10,10 @@ public class Knight extends Piece {
 		type = Type.KNIGHT;
 		if(color == GamePanel.WHITE) {
 			image = getImage("/piece/wN");
+			symbol = 'N';
 		}else {
 			image = getImage("/piece/bN");
+			symbol = 'n';
 		}
 		
 	}
