@@ -17,9 +17,6 @@ public class DashBoard extends JPanel implements Runnable {
 	private GamePanel gamePanel; // Reference to the GamePanel instance
 	JButton btnNewGame;
     JButton btnLoadGame;
-	public JButton getButtonNewGame() {
-		return btnNewGame;
-	}
 	public JButton getButtonLoadGame() {
 		return btnLoadGame;
 	}

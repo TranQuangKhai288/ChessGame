@@ -50,6 +50,22 @@ public class Main {
                             // Start the game
                             gamePanel.launchGame();
                         });
+                        
+                        JButton btnPlayWithAI = dashboard.getButtonPlayWithAI();
+                        btnPlayWithAI.addActionListener(e -> {
+                        	GamePanel gamePanel = new GamePanel(null);
+                        	gamePanel.modeAI = 1;
+                        	gamePanel.chessEngine = new ChessEngine();
+                        	gamePanel.chessEngine.startEngine("ChessEngine\\stockfish\\stockfish-windows-x86-64-avx2.exe");
+                        	window.getContentPane().removeAll();
+                            window.getContentPane().add(gamePanel);
+                            window.pack();
+                            window.setLocationRelativeTo(null);
+                            window.setVisible(true);
+
+                            gamePanel.launchGame();
+                        });
+                        
 
                         // Show the Dashboard
                         window.getContentPane().removeAll();
@@ -86,9 +102,28 @@ public class Main {
                             window.setLocationRelativeTo(null);
                             window.setVisible(true);
 
+                            
+                 
+                            
                             // Start the game
                             gamePanel.launchGame();
                         });
+                        
+                        JButton btnPlayWithAI = dashboard.getButtonPlayWithAI();
+                        btnPlayWithAI.addActionListener(e -> {
+                        	GamePanel gamePanel = new GamePanel(null);
+                        	gamePanel.modeAI = 1;
+                        	gamePanel.chessEngine = new ChessEngine();
+                        	gamePanel.chessEngine.startEngine("ChessEngine\\stockfish\\stockfish-windows-x86-64-avx2.exe");
+                        	window.getContentPane().removeAll();
+                            window.getContentPane().add(gamePanel);
+                            window.pack();
+                            window.setLocationRelativeTo(null);
+                            window.setVisible(true);
+
+                            gamePanel.launchGame();
+                        });
+                        
 
                         // Show the Dashboard
                         window.getContentPane().removeAll();
@@ -155,29 +190,6 @@ public class Main {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-            // Start the game
-            gamePanel.launchGame();
-        });
-        
-
-        JButton btnPlayWithAI = dashboard.getButtonPlayWithAI();
-        btnPlayWithAI.addActionListener(e -> {
-        	gamePanel.modeAI = 1;
-        	gamePanel.chessEngine = new ChessEngine();
-        	gamePanel.chessEngine.startEngine("ChessEngine\\stockfish\\stockfish-windows-x86-64-avx2.exe");
-        	window.getContentPane().removeAll();
-            window.getContentPane().add(gamePanel);
-            window.pack();
-            window.setLocationRelativeTo(null);
-            window.setVisible(true);
-
-            gamePanel.launchGame();
-        });
-        
-        window.add(dashboard);
-        window.pack();
-        window.setLocationRelativeTo(null);
-        window.setVisible(true);
     }
 
   private static void displayGamesAsButtons(List<Map<String, Object>> games) {
@@ -232,3 +244,4 @@ public class Main {
 	    frame.setVisible(true);
 	}
 }
+
