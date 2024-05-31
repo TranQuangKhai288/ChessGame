@@ -16,6 +16,11 @@ public class DashBoard extends JPanel implements Runnable {
 	
 	private GamePanel gamePanel; // Reference to the GamePanel instance
 	JButton btnNewGame;
+    JButton btnLoadGame;
+
+	public JButton getButtonLoadGame() {
+		return btnLoadGame;
+	}
 	JButton btnPlayWithAI;
 	
 	public JButton getButtonNewGame() {
@@ -41,6 +46,12 @@ public class DashBoard extends JPanel implements Runnable {
          btnNewGame.setBackground(new Color(112, 128, 144));
          btnNewGame.setBounds(376, 130, 150, 30);
          add(btnNewGame);
+         
+         btnLoadGame = new JButton("Load Game");
+         btnLoadGame.setForeground(new Color(255, 255, 255));
+         btnLoadGame.setBackground(new Color(112, 128, 144));
+         btnLoadGame.setBounds(376, 170, 150, 30);
+         add(btnLoadGame);
          
          JButton btnPlayOnline = new JButton("Play Online");
          btnPlayOnline.setForeground(Color.WHITE);
