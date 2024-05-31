@@ -28,6 +28,21 @@ public class Main {
             gamePanel.launchGame();
         });
         
+
+        JButton btnPlayWithAI = dashboard.getButtonPlayWithAI();
+        btnPlayWithAI.addActionListener(e -> {
+        	gamePanel.modeAI = 1;
+        	gamePanel.chessEngine = new ChessEngine();
+        	gamePanel.chessEngine.startEngine("ChessEngine\\stockfish\\stockfish-windows-x86-64-avx2.exe");
+        	window.getContentPane().removeAll();
+            window.getContentPane().add(gamePanel);
+            window.pack();
+            window.setLocationRelativeTo(null);
+            window.setVisible(true);
+
+            gamePanel.launchGame();
+        });
+        
         window.add(dashboard);
         window.pack();
         window.setLocationRelativeTo(null);

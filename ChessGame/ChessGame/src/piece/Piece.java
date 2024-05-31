@@ -19,8 +19,9 @@ public class Piece {
 	public int color;
 	public Piece hittingP;
 	public boolean moved, twoStepped;
-	
+	public char symbol; 
 	//constructor
+	
 	
 	public Piece(int color, int col, int row) {
 		this.color = color;
@@ -67,7 +68,6 @@ public class Piece {
 	
 	
 	public void updatePosition() {
-		
 		//to check en Passant
 		if(type == Type.PAWN) {
 			if(Math.abs(row-preRow)==2) {
