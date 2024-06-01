@@ -32,6 +32,7 @@ import java.io.OutputStreamWriter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 
 //class for create VIEW of game
 public class GamePanel extends JPanel implements Runnable {
@@ -43,6 +44,9 @@ public class GamePanel extends JPanel implements Runnable {
 	Mouse mouse = new Mouse();
 	String id;
 	JButton saveButton;
+	
+	//User Infor
+	String userId = UserSession.getInstance().getUserId();
 	
 	//CHESS BOARD
 	char[][] chessBoard = {
@@ -168,6 +172,47 @@ public class GamePanel extends JPanel implements Runnable {
 	        ex.printStackTrace();
 	    }
 	}
+	
+	 private void callAPIBonusMarkUser(String user_id, String mark) {
+	        try {
+	            URL url = new URL("http://localhost:5000/game/bonusMarkUser");
+	            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	            connection.setRequestMethod("POST");
+	            connection.setRequestProperty("Content-Type", "application/json");
+	            connection.setDoOutput(true);
+
+	            // Create JSON request body
+	            String requestBody = String.format("{\"user_id\": \"%s\", \"mark\": \"%s\"}", user_id, mark);
+
+	            // Send request body
+	            try (OutputStream outputStream = connection.getOutputStream()) {
+	                byte[] input = requestBody.getBytes("utf-8");
+	                outputStream.write(input, 0, input.length);
+	            }
+
+	            int status = connection.getResponseCode();
+	            if (status == 200) {
+	                
+	            } else {
+	                // Handle unsuccessful login (e.g., show error message)
+	                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
+	                    StringBuilder response = new StringBuilder();
+	                    String line;
+	                    while ((line = reader.readLine()) != null) {
+	                        response.append(line);
+	                    }
+	                    System.out.println("Error response: " + response.toString());
+	                }
+	            }
+
+	            connection.disconnect();
+	        } catch (IOException ex) {
+	            ex.printStackTrace();
+	            // Handle exception
+	        }
+	    }
+	
+	
 	public void setPieces() {
 		
 		//the White TEAM
@@ -433,6 +478,8 @@ public class GamePanel extends JPanel implements Runnable {
 		}
 	}
 	
+	
+	
 	private void update() {
 		//Mouse Button PRESSED	
 		if (playerTurn == true) {
@@ -502,7 +549,14 @@ public class GamePanel extends JPanel implements Runnable {
 							
 							//
 							if(isKingInCheck()&&isCheckmate()) {
-								gameover=true;								
+								gameover=true;
+								
+								if (currentColor == WHITE) {
+									
+									callAPIBonusMarkUser(userId, "100");
+									
+								}
+								
 							}
 							else if(isStalemate()&& isKingInCheck() == false) {
 								stalemate = true;
