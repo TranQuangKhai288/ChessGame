@@ -1,6 +1,7 @@
 package main;
 
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import piece.Bishop;
@@ -104,74 +105,114 @@ public class GamePanel extends JPanel implements Runnable {
 		
 		addMouseMotionListener(mouse);
 		addMouseListener(mouse);
-		initSaveButton();
+		initSaveAsButton();
+		if(id != null) {
+			initSaveButton();
+		}
 		setPieces();
 		copyPieces(pieces, simPieces);
 	}
 	private void initSaveButton() {
-		saveButton = new JButton("SAVE");
-		saveButton.setBounds(WIDTH - 100, 10, 80, 30); // Position top right
-		saveButton.addActionListener(e -> sendPieces(simPieces));
-		add(saveButton);
+		 saveButton = new JButton("SAVE");
+	        saveButton.setBounds(WIDTH - 220, 10, 100, 30); // Position top right
+	        saveButton.addActionListener(e -> {
+	               sendPieces(simPieces, null, id);
+	        });
+	        add(saveButton);
 	}
-	public void sendPieces(ArrayList<Piece> pieces) {
-	    ArrayList<PieceData> pieceDataList = new ArrayList<>();
-	    for (Piece piece : pieces) {
-	        String type = "";
-	        if (piece instanceof Rook) {
-	            type = "Rook";
-	        } else if (piece instanceof King) {
-	            type = "King";
-	        } else if (piece instanceof Queen) {
-	            type = "Queen";
-	        } else if (piece instanceof Bishop) {
-	            type = "Bishop";
-	        } else if (piece instanceof Knight) {
-	            type = "Knight";
-	        } else if (piece instanceof Pawn) {
-	            type = "Pawn";
-	        }
-	        PieceData pieceData = new PieceData(piece.col, piece.row, piece.color, type);
-	        pieceDataList.add(pieceData);
-	    }
-
-	    Gson gson = new Gson();
-	    String json = gson.toJson(pieceDataList);
-
-	    try {
-	        URL url = new URL("http://localhost:5000/game/save");
-	        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-	        connection.setRequestMethod("POST");
-	        connection.setRequestProperty("Content-Type", "application/json");
-	        connection.setDoOutput(true);
-
-	        // Gửi dữ liệu JSON
-	        try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8")) {
-	            writer.write(json);
-	            writer.flush();
-	        }
-
-	        // Đọc response
-	        int responseCode = connection.getResponseCode();
-	        if (responseCode == HttpURLConnection.HTTP_CREATED) {
-	            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
-	                StringBuilder response = new StringBuilder();
-	                String line;
-	                while ((line = reader.readLine()) != null) {
-	                    response.append(line.trim());
-	                }
-	                System.out.println("Response: " + response.toString());
+	 private void initSaveAsButton() {
+	        saveButton = new JButton("SAVE AS");
+	        saveButton.setBounds(WIDTH - 100, 10, 100, 30); // Position top right
+	        saveButton.addActionListener(e -> {
+	            String saveName = JOptionPane.showInputDialog(null, "Enter the name of the save:", "Save Game", JOptionPane.PLAIN_MESSAGE);
+	            if (saveName != null && !saveName.trim().isEmpty()) {
+	                sendPieces(simPieces, saveName.trim(), null);
 	            }
-	        } else {
-	            System.out.println("Error: " + responseCode);
+	        });
+	        add(saveButton);
+	    }
+	 public void sendPieces(ArrayList<Piece> pieces, String saveName, String id) {
+	        ArrayList<PieceData> pieceDataList = new ArrayList<>();
+	        for (Piece piece : pieces) {
+	            String type = "";
+	            if (piece instanceof Rook) {
+	                type = "Rook";
+	            } else if (piece instanceof King) {
+	                type = "King";
+	            } else if (piece instanceof Queen) {
+	                type = "Queen";
+	            } else if (piece instanceof Bishop) {
+	                type = "Bishop";
+	            } else if (piece instanceof Knight) {
+	                type = "Knight";
+	            } else if (piece instanceof Pawn) {
+	                type = "Pawn";
+	            }
+	            PieceData pieceData = new PieceData(piece.col, piece.row, piece.color, type);
+	            pieceDataList.add(pieceData);
 	        }
 
-	        // Đóng kết nối
-	        connection.disconnect();
-	    } catch (IOException ex) {
-	        ex.printStackTrace();
+	        SaveData saveData = new SaveData(saveName, pieceDataList);
+
+	        Gson gson = new Gson();
+	        String json = gson.toJson(saveData);
+
+	        try {
+	        	if(id != null) {
+	        		 URL url = new URL("http://localhost:5000/game/override/" + id);
+	                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	                 connection.setRequestMethod("PUT");
+	                 connection.setDoOutput(true);
+	                 connection.setRequestProperty("Content-Type", "application/json");
+
+	                 try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8")) {
+	                     writer.write(json);
+	                     writer.flush();
+	                 }
+
+	                 int responseCode = connection.getResponseCode();
+	                 if (responseCode == HttpURLConnection.HTTP_OK) {
+	                     System.out.println("Game updated successfully.");
+	                 } else {
+	                     System.out.println("Failed to update game. Response Code: " + responseCode);
+	                 }
+	                 connection.disconnect();
+	        	}
+	        	else {
+	            URL url = new URL("http://localhost:5000/game/save");
+	            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	            connection.setRequestMethod("POST");
+	            connection.setRequestProperty("Content-Type", "application/json");
+	            connection.setDoOutput(true);
+
+	            // Gửi dữ liệu JSON
+	            try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8")) {
+	                writer.write(json);
+	                writer.flush();
+	            }
+
+	            // Đọc response
+	            int responseCode = connection.getResponseCode();
+	            if (responseCode == HttpURLConnection.HTTP_CREATED) {
+	                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
+	                    StringBuilder response = new StringBuilder();
+	                    String line;
+	                    while ((line = reader.readLine()) != null) {
+	                        response.append(line.trim());
+	                    }
+	                    System.out.println("Response: " + response.toString());
+	                }
+	            } else {
+	                System.out.println("Error: " + responseCode);
+	            }
+
+	            // Đóng kết nối
+	            connection.disconnect();
+	        	}
+	        } catch (IOException ex) {
+	            ex.printStackTrace();
+	        }
 	    }
-	}
 	
 	 private void callAPIBonusMarkUser(String user_id, String mark) {
 	        try {

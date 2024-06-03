@@ -203,10 +203,13 @@ public class Main {
 	    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         frame.getContentPane().setBackground(Color.DARK_GRAY);
 	    // Create buttons for each game
+        if(games.size() > 0) {
 	    for (Map<String, Object> game : games) {
 	        String gameId = game.get("_id").toString();
-	        String gameNumber = game.get("game").toString();
-	        JButton gameButton = new JButton("Game Number: " + gameNumber);
+	        String gameNumber = "def";
+	        if(game.get("game") != null)
+	        gameNumber = game.get("game").toString();
+	        JButton gameButton = new JButton("Game : " + gameNumber);
 	        gameButton.setForeground(new Color(255, 255, 255));
 	        gameButton.setBackground(new Color(112, 128, 144));
 	        gameButton.setBounds(376, 130, 150, 30);
@@ -232,6 +235,7 @@ public class Main {
 
 	        panel.add(gameButton);
 	    }
+        }
 
 	    // Add the panel to a JScrollPane
 	    JScrollPane scrollPane = new JScrollPane(panel);
