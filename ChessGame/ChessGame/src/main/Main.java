@@ -169,17 +169,19 @@ public class Main {
         }
     }
 
-    private static void displayGamesAsButtons(List<Map<String, Object>> games) {
-        // Create a JFrame to display the game buttons
-        JFrame frame = new JFrame("Games List");
-        frame.setSize(400, 300);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+   
 
-        // Create a JPanel to hold the buttons
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        frame.getContentPane().setBackground(Color.DARK_GRAY);
-        Dimension buttonSize = new Dimension(150, 30);
+	private static void displayGamesAsButtons(List<Map<String, Object>> games) {
+	    // Create a JFrame to display the game buttons
+	    JFrame frame = new JFrame("Games List");
+	    frame.setSize(400, 300);
+	    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	
+	    // Create a JPanel to hold the buttons
+	    JPanel panel = new JPanel();
+	    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+	    frame.getContentPane().setBackground(Color.DARK_GRAY);
+	    Dimension buttonSize = new Dimension(150, 30);
 	// Create buttons for each game
 	if(games.size() > 0) {
 	for (Map<String, Object> game : games) {
@@ -206,25 +208,25 @@ public class Main {
 	            frame.pack();
 	            frame.setLocationRelativeTo(null);
 	            frame.setVisible(true);
-
-                    // Start the game
-                    gamePanel.launchGame();
-                }
-            });
-
+	
+	                // Start the game
+	                gamePanel.launchGame();
+	            }
+	        });
+	
 	        panel.add(gameButton);
 	    }
-
-        }
-
-        // Add the panel to a JScrollPane
-        JScrollPane scrollPane = new JScrollPane(panel);
-        frame.getContentPane().add(scrollPane);
-
-        // Center the frame on the screen
-        frame.setLocationRelativeTo(null);
-
-        // Display the JFrame
-        frame.setVisible(true);
-    }
+	
+	    }
+	
+	    // Add the panel to a JScrollPane
+	    JScrollPane scrollPane = new JScrollPane(panel);
+	    frame.getContentPane().add(scrollPane);
+	
+	    // Center the frame on the screen
+	    frame.setLocationRelativeTo(null);
+	
+	    // Display the JFrame
+	    frame.setVisible(true);
+	}
 }
