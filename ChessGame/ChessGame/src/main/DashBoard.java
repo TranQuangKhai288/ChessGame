@@ -8,7 +8,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import org.json.JSONObject;
 
 public class DashBoard extends JPanel implements Runnable {
 
@@ -16,6 +15,7 @@ public class DashBoard extends JPanel implements Runnable {
     JButton btnNewGame;
     JButton btnLoadGame;
     JButton btnPlayWithAI;
+    JButton btnShowTopUser;
 
     public JButton getButtonLoadGame() {
         return btnLoadGame;
@@ -28,16 +28,16 @@ public class DashBoard extends JPanel implements Runnable {
     public JButton getButtonPlayWithAI() {
         return btnPlayWithAI;
     }
+    
+    public JButton getButtonTop5Player() {
+        return btnShowTopUser;
+    }
 
     public DashBoard() {
         this.gamePanel = gamePanel;
         setLayout(null);
         setPreferredSize(new Dimension(600, 400));
-
-        JLabel imgBackground = new JLabel("New Game");
-        imgBackground.setBounds(0, 0, 598, 399);
         Image originalImage = new ImageIcon(this.getClass().getResource("/background.png")).getImage();
-        Image scaledImage = originalImage.getScaledInstance(imgBackground.getWidth(), imgBackground.getHeight(), Image.SCALE_SMOOTH);
 
         // Retrieve the user ID from UserSession
         String userName = UserSession.getInstance().getUserName();
@@ -72,7 +72,17 @@ public class DashBoard extends JPanel implements Runnable {
         btnPlayWithAI.setBackground(new Color(112, 128, 144));
         btnPlayWithAI.setBounds(376, 250, 150, 30);
         add(btnPlayWithAI);
-
+        
+        btnShowTopUser = new JButton("Top 5 Player");
+        btnShowTopUser.setForeground(Color.WHITE);
+        btnShowTopUser.setBackground(new Color(112, 128, 144));
+        btnShowTopUser.setBounds(376, 290, 150, 30);
+        add(btnShowTopUser);
+        
+        JLabel imgBackground = new JLabel("New Game");
+        imgBackground.setBounds(0, 0, 598, 399);
+        Image scaledImage = originalImage.getScaledInstance(imgBackground.getWidth(), imgBackground.getHeight(), Image.SCALE_SMOOTH);
+        
         imgBackground.setIcon(new ImageIcon(scaledImage));
         add(imgBackground);
     }

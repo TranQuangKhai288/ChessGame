@@ -21,6 +21,8 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.ArrayList;
 import piece.PieceData;
@@ -29,13 +31,17 @@ import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
 import java.util.Map;
 import java.net.HttpURLConnection;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URL;
 import java.util.List;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import javax.swing.SwingConstants;
 
 //class for create VIEW of game
 public class GamePanel extends JPanel implements Runnable {
@@ -47,6 +53,7 @@ public class GamePanel extends JPanel implements Runnable {
 	Mouse mouse = new Mouse();
 	String id;
 	JButton saveButton;
+	JButton connectButton;
 	
 	//User Infor
 	String userId = UserSession.getInstance().getUserId();
@@ -97,6 +104,7 @@ public class GamePanel extends JPanel implements Runnable {
 	boolean gameover;
 	boolean stalemate;
 	int currentColor = WHITE;
+
 	
 	//constructor
 	public GamePanel(String id) {
@@ -113,7 +121,23 @@ public class GamePanel extends JPanel implements Runnable {
 		}
 		setPieces();
 		copyPieces(pieces, simPieces);
+        
+        connectButton = new JButton("CONNECT");
+        connectButton.addActionListener(new ConnectButtonListener());
+        connectButton.setBounds(1100, 52, 80, 30);
+        add(connectButton);
 	}
+	
+	// Listener for the connect button
+    private class ConnectButtonListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            
+        }
+    }
+    
+    
+    
 	private void initSaveButton() {
 		 saveButton = new JButton("SAVE");
 	        saveButton.setBounds(WIDTH - 220, 10, 100, 30); // Position top right
@@ -1188,6 +1212,4 @@ public class GamePanel extends JPanel implements Runnable {
 		}
 		
 	}
-
-	
 }
