@@ -3,6 +3,7 @@ package main;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.Dimension;
 import java.util.List;
 import java.util.Map;
 import javax.swing.*;
@@ -168,55 +169,64 @@ public class Main {
         }
     }
 
-    private static void displayGamesAsButtons(List<Map<String, Object>> games) {
-        // Create a JFrame to display the game buttons
-        JFrame frame = new JFrame("Games List");
-        frame.setSize(400, 300);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+   
 
-        // Create a JPanel to hold the buttons
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        frame.getContentPane().setBackground(Color.DARK_GRAY);
-        // Create buttons for each game
-        for (Map<String, Object> game : games) {
-            String gameId = game.get("_id").toString();
-            String gameNumber = game.get("game").toString();
-            JButton gameButton = new JButton("Game Number: " + gameNumber);
-            gameButton.setForeground(new Color(255, 255, 255));
-            gameButton.setBackground(new Color(112, 128, 144));
-            gameButton.setBounds(376, 130, 150, 30);
-            gameButton.setAlignmentX((float) 0.5);
-            // Add an ActionListener to handle button clicks
-            gameButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    GamePanel gamePanel = new GamePanel(gameId);
-                    // Handle game button click
-                    System.out.println("Game Button Clicked: " + gameId);
-                    // Add the GamePanel to the window
-                    frame.getContentPane().removeAll();
-                    frame.getContentPane().add(gamePanel);
-                    frame.pack();
-                    frame.setLocationRelativeTo(null);
-                    frame.setVisible(true);
-
-                    // Start the game
-                    gamePanel.launchGame();
-                }
-            });
-
-            panel.add(gameButton);
-        }
-
-        // Add the panel to a JScrollPane
-        JScrollPane scrollPane = new JScrollPane(panel);
-        frame.getContentPane().add(scrollPane);
-
-        // Center the frame on the screen
-        frame.setLocationRelativeTo(null);
-
-        // Display the JFrame
-        frame.setVisible(true);
-    }
+	private static void displayGamesAsButtons(List<Map<String, Object>> games) {
+	    // Create a JFrame to display the game buttons
+	    JFrame frame = new JFrame("Games List");
+	    frame.setSize(400, 300);
+	    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	
+	    // Create a JPanel to hold the buttons
+	    JPanel panel = new JPanel();
+	    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+	    frame.getContentPane().setBackground(Color.DARK_GRAY);
+	    Dimension buttonSize = new Dimension(150, 30);
+	// Create buttons for each game
+	if(games.size() > 0) {
+	for (Map<String, Object> game : games) {
+	    String gameId = game.get("_id").toString();
+	    String gameNumber = "def";
+	    if(game.get("game") != null)
+	    gameNumber = game.get("game").toString();
+	    JButton gameButton = new JButton("Game : " + gameNumber);
+	    gameButton.setForeground(new Color(255, 255, 255));
+	    gameButton.setBackground(new Color(112, 128, 144));
+	    gameButton.setPreferredSize(buttonSize); 
+	
+	    gameButton.setAlignmentX((float) 0.5);
+	    // Add an ActionListener to handle button clicks
+	    gameButton.addActionListener(new ActionListener() {
+	        @Override
+	        public void actionPerformed(ActionEvent e) {
+		        GamePanel gamePanel = new GamePanel(gameId);
+	            // Handle game button click
+	            System.out.println("Game Button Clicked: " + gameId);
+	            // Add the GamePanel to the window
+	            frame.getContentPane().removeAll();
+	            frame.getContentPane().add(gamePanel);
+	            frame.pack();
+	            frame.setLocationRelativeTo(null);
+	            frame.setVisible(true);
+	
+	                // Start the game
+	                gamePanel.launchGame();
+	            }
+	        });
+	
+	        panel.add(gameButton);
+	    }
+	
+	    }
+	
+	    // Add the panel to a JScrollPane
+	    JScrollPane scrollPane = new JScrollPane(panel);
+	    frame.getContentPane().add(scrollPane);
+	
+	    // Center the frame on the screen
+	    frame.setLocationRelativeTo(null);
+	
+	    // Display the JFrame
+	    frame.setVisible(true);
+	}
 }
