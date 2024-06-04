@@ -11,16 +11,14 @@ import java.net.URL;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class Top5User extends JFrame {
+public class Top5User extends JPanel {
     private JTable table;
     private String[] columnNames = {"Name", "Email", "Mark"};
-    private Object[][] data;
+    private Object[][] data = {};
 
-    public Top5User() {
-        setTitle("Top 5 Users");
-        setSize(600, 400);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+    public Top5User(JFrame window, Runnable showDashboard) {
+        setLayout(new BorderLayout());
+        setPreferredSize(new Dimension(600, 400));
 
         // Set modern look and feel
         try {
@@ -29,12 +27,10 @@ public class Top5User extends JFrame {
             e.printStackTrace();
         }
 
-        fetchTopUsers();
-
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JLabel headerLabel = new JLabel("Top 5 Users", SwingConstants.CENTER);
+        JLabel headerLabel = new JLabel("Top 5 Players", SwingConstants.CENTER);
         headerLabel.setFont(new Font("Arial", Font.BOLD, 24));
         mainPanel.add(headerLabel, BorderLayout.NORTH);
 
@@ -49,6 +45,17 @@ public class Top5User extends JFrame {
         mainPanel.add(footerLabel, BorderLayout.SOUTH);
 
         add(mainPanel);
+
+        // Add a Back button
+        JButton backButton = new JButton("Back");
+        backButton.addActionListener(e -> {
+            // Redirect to dashboard
+            SwingUtilities.invokeLater(showDashboard);
+        });
+        mainPanel.add(backButton, BorderLayout.SOUTH);
+
+        // Fetch and set data after table initialization
+        fetchTopUsers();
     }
 
     private void fetchTopUsers() {
@@ -80,6 +87,12 @@ public class Top5User extends JFrame {
                     data[i][1] = userDetails.getString("email");
                     data[i][2] = user.getInt("mark");
                 }
+
+                // Update table model with new data
+                SwingUtilities.invokeLater(() -> {
+                    DefaultTableModel model = (DefaultTableModel) table.getModel();
+                    model.setDataVector(data, columnNames);
+                });
             } else {
                 System.out.println("GET request not worked");
             }
@@ -90,7 +103,12 @@ public class Top5User extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            Top5User frame = new Top5User();
+            JFrame frame = new JFrame("Top 5 Users");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            // Pass null for the showDashboard Runnable in the main method for standalone testing
+            frame.add(new Top5User(frame, () -> {}));
+            frame.pack();
+            frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
     }
