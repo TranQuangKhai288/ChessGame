@@ -178,7 +178,7 @@ public class GamePanel extends JPanel implements Runnable {
 	            pieceDataList.add(pieceData);
 	        }
 
-	        SaveData saveData = new SaveData(saveName, pieceDataList);
+	        SaveData saveData = new SaveData(saveName, pieceDataList, this.currentColor);
 
 	        Gson gson = new Gson();
 	        String json = gson.toJson(saveData);
@@ -403,7 +403,13 @@ public class GamePanel extends JPanel implements Runnable {
 				// Lấy danh sách các đối tượng Piece từ dữ liệu trả về từ backend
 				Map<String, Object> gameData = (Map<String, Object>) jsonDataMap.get("game");
 				List<Map<String, Object>> listPieces = (List<Map<String, Object>>) gameData.get("pieces");
-
+				if(gameData.get("currentColor") instanceof Double) {
+					System.out.println("Yessssss");
+				}
+				long curLong = Math.round((double) gameData.get("currentColor"));
+				int curInt = (int) curLong;
+				System.out.println(curLong);
+				this.currentColor = gameData.get("currentColor") != null ? curInt : 0;
 				// Tạo các đối tượng Piece từ danh sách pieces
 				for (Map<String, Object> pieceData : listPieces) {
 					int col = ((Double) pieceData.get("col")).intValue();
@@ -433,7 +439,6 @@ public class GamePanel extends JPanel implements Runnable {
 		bRookQueenSide = pieces.get(24);
 		bRookKingSide = pieces.get(25);
 	}
-
 	private static Piece createPiece(int color, String type, int col, int row) {
 		switch (type) {
 			case "Pawn":
