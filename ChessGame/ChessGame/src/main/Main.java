@@ -3,6 +3,7 @@ package main;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.Dimension;
 import java.util.List;
 import java.util.Map;
 
@@ -202,6 +203,7 @@ public class Main {
 	    JPanel panel = new JPanel();
 	    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         frame.getContentPane().setBackground(Color.DARK_GRAY);
+        Dimension buttonSize = new Dimension(150, 30);
 	    // Create buttons for each game
         if(games.size() > 0) {
 	    for (Map<String, Object> game : games) {
@@ -212,7 +214,8 @@ public class Main {
 	        JButton gameButton = new JButton("Game : " + gameNumber);
 	        gameButton.setForeground(new Color(255, 255, 255));
 	        gameButton.setBackground(new Color(112, 128, 144));
-	        gameButton.setBounds(376, 130, 150, 30);
+	        gameButton.setPreferredSize(buttonSize); 
+
 	        gameButton.setAlignmentX((float) 0.5);
 	        // Add an ActionListener to handle button clicks
 	        gameButton.addActionListener(new ActionListener() {

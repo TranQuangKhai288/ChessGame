@@ -4,6 +4,8 @@ import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import org.json.JSONObject;
+
 import piece.Bishop;
 import piece.King;
 import piece.Knight;
@@ -169,9 +171,10 @@ public class GamePanel extends JPanel implements Runnable {
 	                     writer.write(json);
 	                     writer.flush();
 	                 }
-
+	                 
 	                 int responseCode = connection.getResponseCode();
 	                 if (responseCode == HttpURLConnection.HTTP_OK) {
+	                	 JOptionPane.showMessageDialog(null, "Saved", "Success", JOptionPane.INFORMATION_MESSAGE);
 	                     System.out.println("Game updated successfully.");
 	                 } else {
 	                     System.out.println("Failed to update game. Response Code: " + responseCode);
@@ -196,11 +199,18 @@ public class GamePanel extends JPanel implements Runnable {
 	            if (responseCode == HttpURLConnection.HTTP_CREATED) {
 	                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
 	                    StringBuilder response = new StringBuilder();
+
 	                    String line;
 	                    while ((line = reader.readLine()) != null) {
 	                        response.append(line.trim());
 	                    }
-	                    System.out.println("Response: " + response.toString());
+	                    String jsonResponse = response.toString();
+	                    System.out.println(jsonResponse);
+	                    
+	                    JSONObject objectResponse = parseDataFromResponse(jsonResponse);
+	                    this.id = objectResponse.getString("_id");
+	                    initSaveButton();
+	                    JOptionPane.showMessageDialog(null, "Saved", "Success", JOptionPane.INFORMATION_MESSAGE);
 	                }
 	            } else {
 	                System.out.println("Error: " + responseCode);
@@ -213,7 +223,16 @@ public class GamePanel extends JPanel implements Runnable {
 	            ex.printStackTrace();
 	        }
 	    }
-	
+	 private JSONObject parseDataFromResponse(String response) {
+	        try {
+	            JSONObject jsonObject = new JSONObject(response);
+	            JSONObject data = jsonObject.getJSONObject("data");
+	            return data;
+	        } catch (org.json.JSONException e) {
+	            e.printStackTrace();
+	            return null;
+	        }
+	    }
 	 private void callAPIBonusMarkUser(String user_id, String mark) {
 	        try {
 	            URL url = new URL("http://localhost:5000/game/bonusMarkUser");
