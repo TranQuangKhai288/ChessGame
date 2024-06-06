@@ -1,11 +1,15 @@
 package main;
 
 import javax.swing.*;
+
+import org.json.JSONObject;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -170,9 +174,10 @@ public class Register extends JPanel implements Runnable {
     }
 
     private void callAPI(String username, String email, String password) {
+        HttpURLConnection connection = null;
         try {
             URL url = new URL("http://localhost:5000/auth/signUp");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setDoOutput(true);
@@ -187,28 +192,57 @@ public class Register extends JPanel implements Runnable {
             }
 
             int status = connection.getResponseCode();
-            
-            if (status == 200) {
-                // Successful registration, run the onSuccess callback
-                if (onSuccess != null) {
-                    onSuccess.run();
-                }
-            } else {
-                // Handle unsuccessful registration (e.g., show error message)
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
+            if (status == 201) {
+                // Read the response
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
                     StringBuilder response = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        response.append(line);
+                        response.append(line.trim());
                     }
-                    System.out.println("Error response: " + response.toString());
+
+                    // Parse JSON response
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    JSONObject data = jsonResponse.getJSONObject("data");
+                    String id = data.getString("_id");
+                    String name = data.getString("name");
+                    
+                    UserSession.getInstance().setUserId(id);
+
+                    UserSession.getInstance().setUserName(name);
+
+                    // Print or use the extracted values
+                    System.out.println("User ID: " + id);
+                    System.out.println("Name: " + name);
+
+                    // Successful registration, run the onSuccess callback
+                    if (onSuccess != null) {
+                        onSuccess.run();
+                    }
+                }
+            } else {
+                // Handle unsuccessful registration (e.g., show error message)
+                InputStream errorStream = connection.getErrorStream();
+                if (errorStream != null) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(errorStream))) {
+                        StringBuilder response = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            response.append(line);
+                        }
+                        System.out.println("Error response: " + response.toString());
+                    }
+                } else {
+                    System.out.println("Error: Received HTTP status code " + status);
                 }
             }
-
-            connection.disconnect();
         } catch (IOException ex) {
             ex.printStackTrace();
             // Handle exception
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 
