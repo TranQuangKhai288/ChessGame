@@ -91,7 +91,7 @@ public class ForgotPassword extends JPanel {
 
     private void callAPI(String email) {
         try {
-            URL url = new URL("http://localhost:5000/auth/resetPassword");
+            URL url = new URL("http://localhost:5000/user/resetAccount");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");

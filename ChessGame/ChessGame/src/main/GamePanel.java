@@ -290,16 +290,16 @@ private void sendPutRequest(String json, String id) {
 	            return null;
 	        }
 	    }
-	 private void callAPIBonusMarkUser(String user_id, String mark) {
+	 private void callAPIBonusMarkUser(String user_id, String score) {
 	        try {
-	            URL url = new URL("http://localhost:5000/game/bonusMarkUser");
+	            URL url = new URL("http://localhost:5000/user/updateScore");
 	            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 	            connection.setRequestMethod("POST");
 	            connection.setRequestProperty("Content-Type", "application/json");
 	            connection.setDoOutput(true);
 
 	            // Create JSON request body
-	            String requestBody = String.format("{\"user_id\": \"%s\", \"mark\": \"%s\"}", user_id, mark);
+	            String requestBody = String.format("{\"user_id\": \"%s\", \"score\": \"%s\"}", user_id, score);
 
 	            // Send request body
 	            try (OutputStream outputStream = connection.getOutputStream()) {
