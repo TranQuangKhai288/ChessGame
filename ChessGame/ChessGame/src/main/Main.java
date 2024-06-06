@@ -135,8 +135,8 @@ public class Main {
         };
 
         // Show the Login panel initially
-//        showLoginPanel[0].run();
-        showDashboardPanel[0].run();
+        showLoginPanel[0].run();
+
     }
 
     private static void loadGames() {

@@ -10,7 +10,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -132,20 +131,18 @@ public class Login extends JPanel {
             }
         });
     }
-    
+
     private JSONObject parseDataFromResponse(String response) {
         try {
             JSONObject jsonObject = new JSONObject(response);
             JSONObject data = jsonObject.getJSONObject("data");
             return data;
-        } catch (org.json.JSONException e) {
+        } catch (JSONException e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    
-    
     private void callAPI(String email, String password) {
         try {
             URL url = new URL("http://localhost:5000/auth/signIn");
@@ -165,8 +162,7 @@ public class Login extends JPanel {
 
             int status = connection.getResponseCode();
             if (status == 200) {
-            	
-            	// Read response to get user_id
+                // Read response to get user_id
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
                     StringBuilder response = new StringBuilder();
                     String line;
@@ -176,18 +172,17 @@ public class Login extends JPanel {
                     // Assuming the response contains JSON with a field "user_id"
                     String jsonResponse = response.toString();
                     System.out.print(jsonResponse);
-                    
+
                     JSONObject objectResponse = parseDataFromResponse(jsonResponse);
                     UserSession.getInstance().setUserId(objectResponse.getString("_id"));
                     UserSession.getInstance().setUserName(objectResponse.getString("name"));
                 }
-            	
+
                 // Successful login, run the onSuccess callback
                 if (onSuccess != null) {
                     onSuccess.run();
                 }
-                
-                
+
             } else {
                 // Handle unsuccessful login (e.g., show error message)
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
@@ -197,6 +192,9 @@ public class Login extends JPanel {
                         response.append(line);
                     }
                     System.out.println("Error response: " + response.toString());
+
+                    // Show error message
+                    showError("Login fail!!!");
                 }
             }
 
@@ -205,5 +203,11 @@ public class Login extends JPanel {
             ex.printStackTrace();
             // Handle exception
         }
+    }
+
+    private void showError(String message) {
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(this, message, "Login Error", JOptionPane.ERROR_MESSAGE);
+        });
     }
 }

@@ -60,7 +60,7 @@ public class Top5User extends JPanel {
 
     private void fetchTopUsers() {
         try {
-            URL url = new URL("http://localhost:5000/game/getTop5User"); // Replace with your actual endpoint
+            URL url = new URL("http://localhost:5000/user/rank"); // Replace with your actual endpoint
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
 
@@ -76,16 +76,15 @@ public class Top5User extends JPanel {
                 in.close();
 
                 JSONObject jsonResponse = new JSONObject(response.toString());
-                JSONArray topUsers = jsonResponse.getJSONArray("topUsers");
+                JSONArray topUsers = jsonResponse.getJSONArray("data");
 
                 data = new Object[topUsers.length()][3];
                 for (int i = 0; i < topUsers.length(); i++) {
                     JSONObject user = topUsers.getJSONObject(i);
-                    JSONObject userDetails = user.getJSONObject("user");
 
-                    data[i][0] = userDetails.getString("name");
-                    data[i][1] = userDetails.getString("email");
-                    data[i][2] = user.getInt("mark");
+                    data[i][0] = user.getString("name");
+                    data[i][1] = user.getString("email");
+                    data[i][2] = user.getInt("score");
                 }
 
                 // Update table model with new data
@@ -100,6 +99,7 @@ public class Top5User extends JPanel {
             e.printStackTrace();
         }
     }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
