@@ -54,7 +54,10 @@ public class GamePanel extends JPanel implements Runnable {
 	String id;
 	JButton saveButton;
 	JButton connectButton;
-	
+	boolean whiteKingSide = false;
+	boolean whiteQueenSide = false;
+    boolean blackKingSide = false;
+    boolean blackQueenSide = false;
 	//User Infor
 	String userId = UserSession.getInstance().getUserId();
 	
@@ -157,96 +160,126 @@ public class GamePanel extends JPanel implements Runnable {
 	        });
 	        add(saveButton);
 	    }
-	 public void sendPieces(ArrayList<Piece> pieces, String saveName, String id) {
-	        ArrayList<PieceData> pieceDataList = new ArrayList<>();
-	        for (Piece piece : pieces) {
-	            String type = "";
-	            if (piece instanceof Rook) {
-	                type = "Rook";
-	            } else if (piece instanceof King) {
-	                type = "King";
-	            } else if (piece instanceof Queen) {
-	                type = "Queen";
-	            } else if (piece instanceof Bishop) {
-	                type = "Bishop";
-	            } else if (piece instanceof Knight) {
-	                type = "Knight";
-	            } else if (piece instanceof Pawn) {
-	                type = "Pawn";
-	            }
-	            PieceData pieceData = new PieceData(piece.col, piece.row, piece.color, type);
-	            pieceDataList.add(pieceData);
-	        }
 
-	        SaveData saveData = new SaveData(saveName, pieceDataList, this.currentColor);
+public void sendPieces(ArrayList<Piece> pieces, String saveName, String id) {
+    ArrayList<PieceData> pieceDataList = new ArrayList<>();
+    for (Piece piece : pieces) {
+        String type = "";
+        if (piece instanceof Rook) {
+            type = "Rook";
+        } else if (piece instanceof King) {
+            type = "King";
+        } else if (piece instanceof Queen) {
+            type = "Queen";
+        } else if (piece instanceof Bishop) {
+            type = "Bishop";
+        } else if (piece instanceof Knight) {
+            type = "Knight";
+        } else if (piece instanceof Pawn) {
+            type = "Pawn";
+        }
+        PieceData pieceData = new PieceData(piece.col, piece.row, piece.color, type);
+        pieceDataList.add(pieceData);
+    }
+    boolean whiteKingSide = false;
+    boolean whiteQueenSide = false;
+    boolean blackKingSide = false;
+    boolean blackQueenSide = false;
+    
+    if (wKing != null && wRookKingSide != null && wRookQueenSide != null) {
+        if (!wKing.moved && !wRookKingSide.moved && chessBoard[7][7] == 'R') {
+            whiteKingSide = true;
+        }
+        if (!wKing.moved && !wRookQueenSide.moved && chessBoard[7][0] == 'R') {
+            whiteQueenSide = true; 
+        }
+    }
 
-	        Gson gson = new Gson();
-	        String json = gson.toJson(saveData);
+    if (bKing != null && bRookKingSide != null && bRookQueenSide != null) {
+        if (!bKing.moved && !bRookKingSide.moved && chessBoard[0][7] == 'r') {
+            blackKingSide = true; 
+        }
+        if (!bKing.moved && !bRookQueenSide.moved && chessBoard[0][0] == 'r') {
+            blackQueenSide = true; 
+        }
+    }
+    SaveData saveData = new SaveData(saveName, pieceDataList, this.currentColor, whiteKingSide, whiteQueenSide, blackKingSide, blackQueenSide);
+    Gson gson = new Gson();
+    String json = gson.toJson(saveData);
 
-	        try {
-	        	if(id != null) {
-	        		 URL url = new URL("http://localhost:5000/game/override/" + id);
-	                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-	                 connection.setRequestMethod("PUT");
-	                 connection.setDoOutput(true);
-	                 connection.setRequestProperty("Content-Type", "application/json");
+    if (id != null) {
+        sendPutRequest(json, id);
+    } else {
+        sendPostRequest(json);
+    }
+}
 
-	                 try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8")) {
-	                     writer.write(json);
-	                     writer.flush();
-	                 }
-	                 
-	                 int responseCode = connection.getResponseCode();
-	                 if (responseCode == HttpURLConnection.HTTP_OK) {
-	                	 JOptionPane.showMessageDialog(null, "Saved", "Success", JOptionPane.INFORMATION_MESSAGE);
-	                     System.out.println("Game updated successfully.");
-	                 } else {
-	                     System.out.println("Failed to update game. Response Code: " + responseCode);
-	                 }
-	                 connection.disconnect();
-	        	}
-	        	else {
-	            URL url = new URL("http://localhost:5000/game/save");
-	            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-	            connection.setRequestMethod("POST");
-	            connection.setRequestProperty("Content-Type", "application/json");
-	            connection.setDoOutput(true);
+private void sendPostRequest(String json) {
+    try {
+        URL url = new URL("http://localhost:5000/game/save");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
 
-	            // Gửi dữ liệu JSON
-	            try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8")) {
-	                writer.write(json);
-	                writer.flush();
-	            }
+        try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8")) {
+            writer.write(json);
+            writer.flush();
+        }
 
-	            // Đọc response
-	            int responseCode = connection.getResponseCode();
-	            if (responseCode == HttpURLConnection.HTTP_CREATED) {
-	                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
-	                    StringBuilder response = new StringBuilder();
+        int responseCode = connection.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_CREATED) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line.trim());
+                }
+                String jsonResponse = response.toString();
+                System.out.println(jsonResponse);
 
-	                    String line;
-	                    while ((line = reader.readLine()) != null) {
-	                        response.append(line.trim());
-	                    }
-	                    String jsonResponse = response.toString();
-	                    System.out.println(jsonResponse);
-	                    
-	                    JSONObject objectResponse = parseDataFromResponse(jsonResponse);
-	                    this.id = objectResponse.getString("_id");
-	                    initSaveButton();
-	                    JOptionPane.showMessageDialog(null, "Saved", "Success", JOptionPane.INFORMATION_MESSAGE);
-	                }
-	            } else {
-	                System.out.println("Error: " + responseCode);
-	            }
+                JSONObject objectResponse = parseDataFromResponse(jsonResponse);
+                this.id = objectResponse.getString("id");
+                initSaveButton();
+                JOptionPane.showMessageDialog(null, "Saved", "Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } else {
+            System.out.println("Error: " + responseCode);
+        }
 
-	            // Đóng kết nối
-	            connection.disconnect();
-	        	}
-	        } catch (IOException ex) {
-	            ex.printStackTrace();
-	        }
-	    }
+        connection.disconnect();
+    } catch (IOException ex) {
+        ex.printStackTrace();
+    }
+}
+
+private void sendPutRequest(String json, String id) {
+    try {
+        URL url = new URL("http://localhost:5000/game/override/" + id);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("PUT");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+
+        try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8")) {
+            writer.write(json);
+            writer.flush();
+        }
+
+        int responseCode = connection.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            JOptionPane.showMessageDialog(null, "Saved", "Success", JOptionPane.INFORMATION_MESSAGE);
+            System.out.println("Game updated successfully.");
+        } else {
+            System.out.println("Failed to update game. Response Code: " + responseCode);
+        }
+
+        connection.disconnect();
+    } catch (IOException ex) {
+        ex.printStackTrace();
+    }
+}
+
 	 private JSONObject parseDataFromResponse(String response) {
 	        try {
 	            JSONObject jsonObject = new JSONObject(response);
@@ -375,61 +408,87 @@ public class GamePanel extends JPanel implements Runnable {
 		} else {
 			pieces.clear();
 			try {
-				String url = "http://localhost:5000/game/loadById?id=" + this.id;
+			    String url = "http://localhost:5000/game/" + this.id;
 
-				// Tạo kết nối HTTP
-				HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-				connection.setRequestMethod("GET");
+			    // Tạo kết nối HTTP
+			    HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+			    connection.setRequestMethod("GET");
+			    connection.setRequestProperty("Accept", "application/json");
 
-				// Đọc dữ liệu từ response
-				BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-				StringBuilder response = new StringBuilder();
-				String line;
-				while ((line = reader.readLine()) != null) {
-					response.append(line);
-				}
-				reader.close();
+			    int responseCode = connection.getResponseCode();
+			    if (responseCode == HttpURLConnection.HTTP_OK) {
+			        // Đọc dữ liệu từ response
+			        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			        StringBuilder response = new StringBuilder();
+			        String line;
+			        while ((line = reader.readLine()) != null) {
+			            response.append(line);
+			        }
+			        reader.close();
 
-				// In ra dữ liệu game nhận được từ response
-				System.out.println(response.toString());
-				// Tạo một đối tượng Gson
-				Gson gson = new Gson();
+			        // In ra dữ liệu game nhận được từ response
+			        System.out.println(response.toString());
 
-				// Chuyển đổi dữ liệu JSON thành một đối tượng Map<String, Object>
-				java.lang.reflect.Type mapType = new TypeToken<Map<String, Object>>() {
-				}.getType();
-				Map<String, Object> jsonDataMap = gson.fromJson(response.toString(), mapType);
+			        // Tạo một đối tượng Gson
+			        Gson gson = new Gson();
 
-				// Lấy danh sách các đối tượng Piece từ dữ liệu trả về từ backend
-				Map<String, Object> gameData = (Map<String, Object>) jsonDataMap.get("game");
-				List<Map<String, Object>> listPieces = (List<Map<String, Object>>) gameData.get("pieces");
-				if(gameData.get("currentColor") instanceof Double) {
-					System.out.println("Yessssss");
-				}
-				long curLong = Math.round((double) gameData.get("currentColor"));
-				int curInt = (int) curLong;
-				System.out.println(curLong);
-				this.currentColor = gameData.get("currentColor") != null ? curInt : 0;
-				// Tạo các đối tượng Piece từ danh sách pieces
-				for (Map<String, Object> pieceData : listPieces) {
-					int col = ((Double) pieceData.get("col")).intValue();
-					int row = ((Double) pieceData.get("row")).intValue();
-					int color = ((Double) pieceData.get("color")).intValue();
-					String type = (String) pieceData.get("type");
+			        // Chuyển đổi dữ liệu JSON thành một đối tượng Map<String, Object>
+			        java.lang.reflect.Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
+			        Map<String, Object> gameData = gson.fromJson(response.toString(), mapType);
 
-					// Tạo đối tượng Piece tương ứng với dữ liệu từ backend
-					Piece piece = createPiece(color, type, col, row);
+			        // Lấy thông tin currentColor
+			        if (gameData.get("currentColor") instanceof Double) {
+			            System.out.println("Yessssss");
+			        }
+			        long curLong = Math.round((double) gameData.get("currentColor"));
+			        int curInt = (int) curLong;
+			        this.currentColor = gameData.get("currentColor") != null ? curInt : 0;
+			        System.out.println(this.currentColor);
+			        System.out.println(curLong);
 
-					pieces.add(piece);
-				}
-				// Đóng kết nối
-				connection.disconnect();
+			        // Lấy danh sách các đối tượng Piece từ dữ liệu trả về từ backend
+			        List<Map<String, Object>> listPieces = (List<Map<String, Object>>) gameData.get("pieces");
+			        this.whiteKingSide = (boolean) gameData.get("whiteKingSide");
+			        this.whiteQueenSide = (boolean) gameData.get("whiteQueenSide");
+			        this.blackKingSide = (boolean) gameData.get("blackKingSide");
+			        this.blackQueenSide = (boolean) gameData.get("blackQueenSide");
+			        // Tạo các đối tượng Piece từ danh sách pieces
+			        for (Map<String, Object> pieceData : listPieces) {
+			            int col = ((Double) pieceData.get("col")).intValue();
+			            int row = ((Double) pieceData.get("row")).intValue();
+			            int color = ((Double) pieceData.get("color")).intValue();
+			            String type = (String) pieceData.get("type");
+
+			            // Tạo đối tượng Piece tương ứng với dữ liệu từ backend
+			            Piece piece = createPiece(color, type, col, row);
+			            if (type.equals("King")) {
+			                if (color == WHITE) {
+			                    wKing = piece;
+			                } else {
+			                    bKing = piece;
+			                }
+			            } else if (type.equals("Rook")) {
+			                if (color == WHITE) {
+			                    wRookQueenSide = piece;
+			                } else {
+			                    bRookQueenSide = piece;
+			                }
+			            }
+			            pieces.add(piece);
+			        }
+			    } else {
+			        System.out.println("GET request failed. Response Code: " + responseCode);
+			    }
+
+			    // Đóng kết nối
+			    connection.disconnect();
 
 			} catch (IOException e) {
-				e.printStackTrace();
+			    e.printStackTrace();
 			}
+
 		}
-		
+		if(id==null) {
 		//For tracking King and Rook
 		wKing = pieces.get(15);
 		wRookQueenSide = pieces.get(8);
@@ -438,6 +497,7 @@ public class GamePanel extends JPanel implements Runnable {
 		bKing = pieces.get(31);
 		bRookQueenSide = pieces.get(24);
 		bRookKingSide = pieces.get(25);
+		}
 	}
 	private static Piece createPiece(int color, String type, int col, int row) {
 		switch (type) {
@@ -496,11 +556,9 @@ public class GamePanel extends JPanel implements Runnable {
 
 	    //castling availability
 	    fen.append(' ');
-	    boolean whiteKingSide = false;
-	    boolean whiteQueenSide = false;
-	    boolean blackKingSide = false;
-	    boolean blackQueenSide = false;
+
 	    
+	    if(id==null) {
 	    if(!wKing.moved && !wRookKingSide.moved && chessBoard[7][7] == 'R')
 	    	whiteKingSide = true;
 	    if(!wKing.moved && !wRookQueenSide.moved && chessBoard[7][0] == 'R')
@@ -510,7 +568,7 @@ public class GamePanel extends JPanel implements Runnable {
 	    	blackKingSide = true;
 	    if(!bKing.moved && !bRookQueenSide.moved && chessBoard[0][0] == 'r')
 	    	blackQueenSide = true; 
-    
+	    }
 	    if (whiteKingSide) {
 	        fen.append('K');
 	    }

@@ -1,6 +1,7 @@
 package main;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.Dimension;
@@ -10,6 +11,7 @@ import javax.swing.*;
 
 import com.google.gson.JsonObject;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -133,7 +135,8 @@ public class Main {
         };
 
         // Show the Login panel initially
-        showLoginPanel[0].run();
+//        showLoginPanel[0].run();
+        showDashboardPanel[0].run();
     }
 
     private static void loadGames() {
@@ -156,8 +159,12 @@ public class Main {
                 // Parse the JSON response
                 Gson gson = new Gson();
                 System.out.println(response.toString());
-                JsonObject jsonResponse = gson.fromJson(response.toString(), JsonObject.class);
-                List<Map<String, Object>> games = gson.fromJson(jsonResponse.get("listGame"), new TypeToken<List<Map<String, Object>>>(){}.getType());
+                
+                // Convert the response to a JsonArray
+                JsonArray jsonResponse = gson.fromJson(response.toString(), JsonArray.class);
+                
+                // Convert the JsonArray to a list of games
+                List<Map<String, Object>> games = gson.fromJson(jsonResponse, new TypeToken<List<Map<String, Object>>>(){}.getType());
 
                 // Display the games as buttons
                 displayGamesAsButtons(games);
@@ -180,16 +187,17 @@ public class Main {
         // Create a JPanel to hold the buttons
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        frame.getContentPane().setBackground(Color.DARK_GRAY);
+        panel.setBackground(Color.DARK_GRAY);
+
         // Create buttons for each game
         for (Map<String, Object> game : games) {
-            String gameId = game.get("_id").toString();
-            String gameNumber = game.get("game").toString();
-            JButton gameButton = new JButton("Game Number: " + gameNumber);
-            gameButton.setForeground(new Color(255, 255, 255));
+            String gameId = game.get("id").toString();
+            String gameName = game.get("game").toString();
+            JButton gameButton = new JButton("Game Name: " + gameName);
+            gameButton.setForeground(Color.WHITE);
             gameButton.setBackground(new Color(112, 128, 144));
-            gameButton.setBounds(376, 130, 150, 30);
-            gameButton.setAlignmentX((float) 0.5);
+            gameButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
             // Add an ActionListener to handle button clicks
             gameButton.addActionListener(new ActionListener() {
                 @Override
@@ -207,6 +215,7 @@ public class Main {
                     // Start the game
                     gamePanel.launchGame();
                 }
+                
             });
 
             panel.add(gameButton);
@@ -222,4 +231,5 @@ public class Main {
         // Display the JFrame
         frame.setVisible(true);
     }
+
 }
