@@ -140,6 +140,7 @@ public class GamePanel extends JPanel implements Runnable {
         add(connectButton);
 	}
 	public void playOnline() {
+		this.onlineMode = true;
 		System.out.println("try connect");
 		new Thread(() -> {
             try {
@@ -708,6 +709,7 @@ private void sendPutRequest(String json, String id) {
 	}
 	
 	public void movePiece() {
+		if(onlineMode) {
        		// Tạo JSON từ dữ liệu di chuyển
 	        JSONObject moveData = new JSONObject();
 	        JSONArray jsonArray = new JSONArray();
@@ -724,6 +726,7 @@ private void sendPutRequest(String json, String id) {
 	        if (out != null) {
 	            out.println(jsonMove);
 	        }
+		}
 }
 
 	
