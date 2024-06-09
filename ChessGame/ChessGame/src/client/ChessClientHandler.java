@@ -16,10 +16,11 @@ public class ChessClientHandler implements Runnable {
     int newRow;
     int color;
     String type;
-    
-    public ChessClientHandler(Socket socket, ChessServer server) {
+    String role;
+    public ChessClientHandler(Socket socket, ChessServer server, String role) {
         this.socket = socket;
         this.server = server;
+        this.role = role;
     }
     public Socket getSocket() {
     	return this.socket;
@@ -30,7 +31,7 @@ public class ChessClientHandler implements Runnable {
         try {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
-
+            out.println(role);
             String inputLine;
             while ((inputLine = in.readLine()) != null) {
             	if (inputLine.trim().startsWith("{")) {
