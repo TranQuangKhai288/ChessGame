@@ -754,11 +754,16 @@ private void sendPutRequest(String json, String id) {
 						for(Piece piece : simPieces) {
 							if (piece.color == currentColor &&
 	                                piece.col == mouse.x / Board.SQUARE_SIZE &&
-	                                piece.row == mouse.y / Board.SQUARE_SIZE &&
-	                                ((playerRole.equals("white") && piece.color == WHITE) || 
-	                                 (playerRole.equals("black") && piece.color != WHITE)))                      
+	                                piece.row == mouse.y / Board.SQUARE_SIZE )	                                                    
 									{
+										if(!onlineMode) 
 										activeP = piece;
+										else {
+											if(((playerRole.equals("white") && piece.color == WHITE) || 
+	                                 (playerRole.equals("black") && piece.color != WHITE)))  {
+												activeP = piece;
+											}
+										}
 									}
 						}
 					}
