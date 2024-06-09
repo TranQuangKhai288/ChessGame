@@ -30,7 +30,7 @@ public class Main {
         Runnable[] showRegisterPanel = new Runnable[1];
         Runnable[] showForgotPasswordPanel = new Runnable[1];
         Runnable[] showDashboardPanel = new Runnable[1];
-
+        
         // Define the login panel
         showLoginPanel[0] = () -> {
             Login loginPanel = new Login(
@@ -82,6 +82,7 @@ public class Main {
             DashBoard dashboard = new DashBoard();
             JButton btnNewGame = dashboard.getButtonNewGame();
             JButton btnLoadGame = dashboard.getButtonLoadGame();
+            JButton btnPlayOnline = dashboard.getButtonOnline();
             btnLoadGame.addActionListener(e -> {
                 loadGames();
             });
@@ -112,7 +113,19 @@ public class Main {
 
                 gamePanel.launchGame();
             });
+            btnPlayOnline.addActionListener(e -> {
+                GamePanel gamePanel = new GamePanel(null); // Create an instance of GamePanel
+                gamePanel.playOnline();
+                // Add the GamePanel to the window
+                window.getContentPane().removeAll();
+                window.getContentPane().add(gamePanel);
+                window.pack();
+                window.setLocationRelativeTo(null);
+                window.setVisible(true);
 
+                // Start the game
+                gamePanel.launchGame();
+            });
             JButton btnShowTop5Player = dashboard.getButtonTop5Player();
             btnShowTop5Player.addActionListener(e -> {
                 System.out.print("top 5 user");
@@ -135,7 +148,8 @@ public class Main {
         };
 
         // Show the Login panel initially
-        showLoginPanel[0].run();
+//        showLoginPanel[0].run();
+        showDashboardPanel[0].run();
 
     }
 

@@ -16,7 +16,7 @@ public class DashBoard extends JPanel implements Runnable {
     JButton btnLoadGame;
     JButton btnPlayWithAI;
     JButton btnShowTopUser;
-
+    JButton btnPlayOnline;
     public JButton getButtonLoadGame() {
         return btnLoadGame;
     }
@@ -31,8 +31,11 @@ public class DashBoard extends JPanel implements Runnable {
     
     public JButton getButtonTop5Player() {
         return btnShowTopUser;
-    }
+    }	
 
+    public JButton getButtonOnline() {
+    	return btnPlayOnline;
+    }
     public DashBoard() {
         this.gamePanel = gamePanel;
         setLayout(null);
@@ -61,7 +64,7 @@ public class DashBoard extends JPanel implements Runnable {
         btnLoadGame.setBounds(376, 170, 150, 30);
         add(btnLoadGame);
 
-        JButton btnPlayOnline = new JButton("Play Online");
+        btnPlayOnline = new JButton("Play Online");
         btnPlayOnline.setForeground(Color.WHITE);
         btnPlayOnline.setBackground(new Color(112, 128, 144));
         btnPlayOnline.setBounds(376, 210, 150, 30);
