@@ -116,6 +116,7 @@ public class GamePanel extends JPanel implements Runnable {
 	int currentColor = WHITE;
 	boolean onlineMode = false;
 	
+	String playerRole;
 	//constructor
 	public GamePanel(String id) {
 		this.id = id;
@@ -154,6 +155,11 @@ public class GamePanel extends JPanel implements Runnable {
                 // Nhận phản hồi từ server và xử lý
                 String response;
                 while ((response = in.readLine()) != null) {
+                	if (!response.trim().startsWith("{")) {
+                		playerRole = response;
+                		System.out.println(playerRole + "First");
+                	}
+                	else {
                     System.out.println("Server says: " + response);
                     JSONObject moveData = new JSONObject(response);
                     JSONArray piecesArray = moveData.getJSONArray("data");
@@ -168,6 +174,7 @@ public class GamePanel extends JPanel implements Runnable {
                         pieces.add(piece);
                     }    
                     copyPieces(pieces, simPieces);
+                	}
                 }
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -710,6 +717,7 @@ private void sendPutRequest(String json, String id) {
 	
 	public void movePiece() {
 		if(onlineMode) {
+			System.out.print(playerRole);
        		// Tạo JSON từ dữ liệu di chuyển
 	        JSONObject moveData = new JSONObject();
 	        JSONArray jsonArray = new JSONArray();
@@ -744,12 +752,19 @@ private void sendPutRequest(String json, String id) {
 					if(activeP == null) {
 						//if the activeP is null, check if you can pick up a piece
 						for(Piece piece : simPieces) {
-							if(piece.color == currentColor &&
-							piece.col == mouse.x/Board.SQUARE_SIZE &&
-							piece.row == mouse.y/Board.SQUARE_SIZE)
-							{
-								activeP = piece;
-							}
+							if (piece.color == currentColor &&
+	                                piece.col == mouse.x / Board.SQUARE_SIZE &&
+	                                piece.row == mouse.y / Board.SQUARE_SIZE )	                                                    
+									{
+										if(!onlineMode) 
+										activeP = piece;
+										else {
+											if(((playerRole.equals("white") && piece.color == WHITE) || 
+	                                 (playerRole.equals("black") && piece.color != WHITE)))  {
+												activeP = piece;
+											}
+										}
+									}
 						}
 					}
 					else {

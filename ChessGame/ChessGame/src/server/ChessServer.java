@@ -20,7 +20,8 @@ public class ChessServer {
             try {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("new client connected");
-                ChessClientHandler clientHandler = new ChessClientHandler(clientSocket, this);
+                String role = clients.size() == 0 ? "white" : "black";
+                ChessClientHandler clientHandler = new ChessClientHandler(clientSocket, this, role);
                 clients.add(clientHandler);
                 new Thread(clientHandler).start();
             } catch (IOException e) {
