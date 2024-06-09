@@ -6,6 +6,8 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import org.json.JSONObject;
+
 import main.Board;
 import main.GamePanel;
 import main.Type;
@@ -35,7 +37,29 @@ public class Piece {
 		preRow = row;
 		
 	}
+	public static Piece fromJson(JSONObject jsonObject) {
+	    String type = jsonObject.getString("type");
+	    int color = jsonObject.getInt("color");
+	    int col = jsonObject.getInt("col");
+	    int row = jsonObject.getInt("row");
 	
+	    switch (type) {
+	        case "PAWN":
+	            return new Pawn(color, col, row);
+	        case "ROOK":
+	            return new Rook(color, col, row);
+	        case "KNIGHT":
+	            return new Knight(color, col, row);
+	        case "BISHOP":
+	            return new Bishop(color, col, row);
+	        case "QUEEN":
+	            return new Queen(color, col, row);
+	        case "KING":
+	            return new King(color, col, row);
+	        default:
+	            throw new IllegalArgumentException("Unknown piece type: " + type);
+	    }
+	}
 	public BufferedImage getImage(String imagePath) {
 		
 		BufferedImage image = null;
@@ -65,7 +89,7 @@ public class Piece {
 	public int getRow(int y) {
 		return ((y+Board.HALF_SQUARE_SIZE)/Board.SQUARE_SIZE);
 	}
-	
+		
 	
 	public void updatePosition() {
 		//to check en Passant
@@ -73,7 +97,7 @@ public class Piece {
 			if(Math.abs(row-preRow)==2) {
 				twoStepped = true;
 			}
-		}
+		}	
 		
 		x = getX(col);
 		y = getY(row);
@@ -88,7 +112,10 @@ public class Piece {
 		x = getX(col);
 		y = getY(row);
 	}
-	
+	public void move(int newCol, int newRow) {
+	    this.col = newCol;
+	    this.row = newRow;
+	}
 	
 	//virtual method
 	public boolean canMove(int targetCol, int targetRow) {
@@ -264,5 +291,20 @@ public class Piece {
 	public void draw(Graphics2D g2) {
 		g2.drawImage(image, x, y, Board.SQUARE_SIZE, Board.SQUARE_SIZE, null);
 	}
-	
+	public JSONObject toJson() {
+	    JSONObject jsonObject = new JSONObject();
+	    jsonObject.put("type", type.toString());
+	    jsonObject.put("x", x);
+	    jsonObject.put("y", y);
+	    jsonObject.put("col", col);
+	    jsonObject.put("row", row);
+	    jsonObject.put("preCol", preCol);
+	    jsonObject.put("preRow", preRow);
+	    jsonObject.put("color", color);
+	    jsonObject.put("moved", moved);
+	    jsonObject.put("twoStepped", twoStepped);
+	    jsonObject.put("symbol", String.valueOf(symbol));
+	    // Bạn có thể thêm các thuộc tính khác nếu cần thiết
+	    return jsonObject;
+	}
 }

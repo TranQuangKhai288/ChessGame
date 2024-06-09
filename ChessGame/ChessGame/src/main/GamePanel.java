@@ -1,11 +1,12 @@
 package main;
 
+
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import org.json.JSONObject;
-
+import org.json.JSONArray;
 import piece.Bishop;
 import piece.King;
 import piece.Knight;
@@ -25,6 +26,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
+
 import piece.PieceData;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -58,6 +61,10 @@ public class GamePanel extends JPanel implements Runnable {
 	boolean whiteQueenSide = false;
     boolean blackKingSide = false;
     boolean blackQueenSide = false;
+    
+    // Socket communication
+    private PrintWriter out;
+    private BufferedReader in;
 	//User Infor
 	String userId = UserSession.getInstance().getUserId();
 	
@@ -107,7 +114,7 @@ public class GamePanel extends JPanel implements Runnable {
 	boolean gameover;
 	boolean stalemate;
 	int currentColor = WHITE;
-
+	boolean onlineMode = false;
 	
 	//constructor
 	public GamePanel(String id) {
@@ -124,18 +131,93 @@ public class GamePanel extends JPanel implements Runnable {
 		}
 		setPieces();
 		copyPieces(pieces, simPieces);
-        
+        if(onlineMode) {
+        	playOnline();
+        }
         connectButton = new JButton("CONNECT");
         connectButton.addActionListener(new ConnectButtonListener());
         connectButton.setBounds(1100, 52, 80, 30);
         add(connectButton);
 	}
+	public void playOnline() {
+		System.out.println("try connect");
+		new Thread(() -> {
+            try {
+                Socket socket = new Socket("127.0.0.1", 12345); // Địa chỉ IP và cổng của server
+                out = new PrintWriter(socket.getOutputStream(), true);
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                
+                // Gửi thông điệp chào mừng tới server
+                out.println("Client connected");
+                
+                // Nhận phản hồi từ server và xử lý
+                String response;
+                while ((response = in.readLine()) != null) {
+                    System.out.println("Server says: " + response);
+                    JSONObject moveData = new JSONObject(response);
+                    JSONArray piecesArray = moveData.getJSONArray("data");
+                    currentColor = moveData.getInt("currentColor");
+                    pieces.clear();
+                    for (int i = 0; i < piecesArray.length(); i++) {
+                        JSONObject pieceJson = piecesArray.getJSONObject(i);
+                        Piece piece = Piece.fromJson(pieceJson);
+                        if(piece instanceof Pawn) {
+                        	piece.twoStepped = true;
+                        }
+                        pieces.add(piece);
+                    }    
+                    copyPieces(pieces, simPieces);
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }).start();
+	}
+	public boolean pieceExists(Piece piece) {
+	    for (Piece p : pieces) {
+	        if (p.equals(piece)) {
+	            return true; // Đã tồn tại piece trong danh sách
+	        }
+	    }
+	    return false; // Không tìm thấy piece trong danh sách
+	}
+	
 	
 	// Listener for the connect button
     private class ConnectButtonListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            
+            new Thread(() -> {
+                try {
+                    Socket socket = new Socket("127.0.0.1", 12345); // Địa chỉ IP và cổng của server
+                    out = new PrintWriter(socket.getOutputStream(), true);
+                    in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    
+                    // Gửi thông điệp chào mừng tới server
+                    out.println("Client connected");
+                    
+                    // Nhận phản hồi từ server và xử lý
+                    String response;
+                    while ((response = in.readLine()) != null) {
+                        System.out.println("Server says: " + response);
+                        JSONObject moveData = new JSONObject(response);
+                        JSONArray piecesArray = moveData.getJSONArray("data");
+                        currentColor = moveData.getInt("currentColor");
+                        pieces.clear();
+                        for (int i = 0; i < piecesArray.length(); i++) {
+                            JSONObject pieceJson = piecesArray.getJSONObject(i);
+                            Piece piece = Piece.fromJson(pieceJson);
+                            if(piece instanceof Pawn) {
+                            	piece.twoStepped = true;
+                            }
+                            pieces.add(piece);
+                        }    
+                        copyPieces(pieces, simPieces);
+                    }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }).start();
         }
     }
     
@@ -563,7 +645,7 @@ private void sendPutRequest(String json, String id) {
 	    	whiteKingSide = true;
 	    if(!wKing.moved && !wRookQueenSide.moved && chessBoard[7][0] == 'R')
 	    	whiteQueenSide = true; 
-	    
+	    	
 	    if(!bKing.moved && !bRookKingSide.moved && chessBoard[0][7] == 'r')
 	    	blackKingSide = true;
 	    if(!bKing.moved && !bRookQueenSide.moved && chessBoard[0][0] == 'r')
@@ -625,12 +707,32 @@ private void sendPutRequest(String json, String id) {
 		}
 	}
 	
+	public void movePiece() {
+       		// Tạo JSON từ dữ liệu di chuyển
+	        JSONObject moveData = new JSONObject();
+	        JSONArray jsonArray = new JSONArray();
+	        for (Piece piece1 : pieces) {
+	            jsonArray.put(piece1.toJson());
+	        }
+	        moveData.put("data", jsonArray);
+	        moveData.put("currentColor", currentColor);
+
+	        
+	        String jsonMove = moveData.toString();
+
+	        // Gửi dữ liệu di chuyển đến server
+	        if (out != null) {
+	            out.println(jsonMove);
+	        }
+}
+
 	
 	
 	private void update() {
 		//Mouse Button PRESSED	
 		if (playerTurn == true) {
 			if(promotion) {
+				
 				promoting();
 			}else if(gameover == false && stalemate == false) {
 				
@@ -657,6 +759,7 @@ private void sendPutRequest(String json, String id) {
 					if(activeP !=null) {
 						System.out.println("VALID: "+ validSquare);
 						if(validSquare) {
+							 Piece dummy = activeP;
 							//MOVE CONFIRM
 							//Update the piece list
 							copyPieces(simPieces, pieces);
@@ -711,11 +814,14 @@ private void sendPutRequest(String json, String id) {
 							else {
 								if(canPromote()) {
 									promotion = true;
-								}else {			
+								}else {	
+							
 									changePlayer();	
+									
 									
 								}
 							}
+							movePiece();
 							
 						}else {
 							copyPieces(pieces, simPieces);
@@ -823,6 +929,7 @@ private void sendPutRequest(String json, String id) {
 		    		
 					copyPieces(simPieces, pieces);
 		    		chessBoard[endRow][endCol] = promotePSymbol;
+		    		
 		    	}
 		    
 		    activeP = engineP;
@@ -1089,7 +1196,7 @@ private void sendPutRequest(String json, String id) {
 		}
 
 		activeP = null;
-		
+			
 		if(modeAI == 1)
 			playerTurn = !playerTurn;
 	}
@@ -1126,6 +1233,7 @@ private void sendPutRequest(String json, String id) {
 					activeP = null;
 					promotion = false;
 					changePlayer();
+					movePiece();
 				}
 			}
 		}

@@ -15,7 +15,7 @@ public class Bishop extends Piece {
 			image = getImage("/piece/bB");
 			symbol = 'b';
 		}
-		
+			
 	}
 	
 public boolean canMove(int targetCol, int targetRow) {
