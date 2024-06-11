@@ -20,18 +20,25 @@ public class ChessServer {
             try {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("new client connected");
-                String role = clients.size() == 0 ? "white" : "black";
+                String role = clients.size() %2 == 0 ? "white" : "black";
                 ChessClientHandler clientHandler = new ChessClientHandler(clientSocket, this, role);
                 clients.add(clientHandler);
                 new Thread(clientHandler).start();
+                if(clients.size() == 2) {
+                	broadcastMessageToAll("true");
+                }
             } catch (IOException e) {
                 System.out.println("Error accepting client connection");
                 e.printStackTrace();
             }
             	
+        }	
+    }
+    public void broadcastMessageToAll(String state) {
+        for (ChessClientHandler client : clients) {
+                client.getGameState(state);
         }
     }
-
     public void broadcastMessage(String message, ChessClientHandler sender) {
         for (ChessClientHandler client : clients) {
             if (client != sender) {
@@ -42,20 +49,11 @@ public class ChessServer {
     public void handleMessageFromClient(String receivedData, ChessClientHandler sender) throws IOException {
         // Xử lý dữ liệu nhận được từ Client A hoặc Client B
 		JSONObject receivedJson = new JSONObject(receivedData);
-		int index = 0;
 		// Gửi dữ liệu đến cả hai loại client
-		for (ChessClientHandler client : clients) {
-			
+		for (ChessClientHandler client : clients) {		
 		    if (client != sender) {
-		    	if(index == 0) {
-		    		System.out.println("this is A");
-		    	}
-		    	else {
-		    		System.out.println("this is B");
-		    	}
 		        client.sendMessage(receivedData);
 		    }
-		    index += 1;
 		}
     }
 

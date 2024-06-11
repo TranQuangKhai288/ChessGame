@@ -23,7 +23,7 @@ public class Piece {
 	public boolean moved, twoStepped;
 	public char symbol; 
 	//constructor
-	
+		
 	
 	public Piece(int color, int col, int row) {
 		this.color = color;
@@ -37,15 +37,33 @@ public class Piece {
 		preRow = row;
 		
 	}
+	
+	public Piece(int color, int col, int row, boolean moved, boolean twoStepped) {
+		this.color = color;
+		this.col = col;
+		this.row = row;
+		
+		x = getX(col);
+		y = getY(row);
+		
+		preCol = col;
+		preRow = row;
+		this.moved = moved;
+		this.twoStepped = twoStepped;
+		
+	}
 	public static Piece fromJson(JSONObject jsonObject) {
 	    String type = jsonObject.getString("type");
 	    int color = jsonObject.getInt("color");
 	    int col = jsonObject.getInt("col");
 	    int row = jsonObject.getInt("row");
-	
+	    boolean moved = jsonObject.getBoolean("moved");
+	    boolean twoStepped = jsonObject.getBoolean("twoStepped");
 	    switch (type) {
 	        case "PAWN":
-	            return new Pawn(color, col, row);
+	        {
+	            return new Pawn(color, col, row, moved, twoStepped);
+	        }
 	        case "ROOK":
 	            return new Rook(color, col, row);
 	        case "KNIGHT":

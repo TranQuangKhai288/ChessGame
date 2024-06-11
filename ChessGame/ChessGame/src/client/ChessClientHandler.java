@@ -29,8 +29,8 @@ public class ChessClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
+        	in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+	        out = new PrintWriter(socket.getOutputStream(), true);
             out.println(role);
             String inputLine;
             while ((inputLine = in.readLine()) != null) {
@@ -44,16 +44,18 @@ public class ChessClientHandler implements Runnable {
                     // Phản hồi cho client (nếu cần)
                     // Ví dụ: gửi thông báo xác nhận về việc di chuyển quân cờ thành công
                     server.handleMessageFromClient(inputLine, this);
-            	}
+            	}	
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
+    
+    public void getGameState(String state) {
+    	out.println(state);
+    }
     public void sendMessage(String message) {
     	System.out.println(message+ "  this is where it sended");
-    	JSONObject moveData = new JSONObject(message);
         out.println(message);
     }
 }

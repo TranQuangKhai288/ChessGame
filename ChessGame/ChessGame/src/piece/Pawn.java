@@ -19,7 +19,18 @@ public class Pawn extends Piece {
 		}
 		
 	}
-	
+	public Pawn(int color, int col, int row, boolean moved, boolean twoStepped) {
+		super(color, col, row, moved, twoStepped);
+		type = Type.PAWN;
+		
+		if(color == GamePanel.WHITE) {
+			image = getImage("/piece/wP");
+			symbol = 'P';
+		}else {
+			image = getImage("/piece/bP");
+			symbol = 'p';
+		}
+	}
 	
 	public boolean canMove(int targetCol, int targetRow) {
 	    int dx = Math.abs(targetCol - preCol);

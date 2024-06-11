@@ -19,6 +19,7 @@ import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -61,13 +62,13 @@ public class GamePanel extends JPanel implements Runnable {
 	boolean whiteQueenSide = false;
     boolean blackKingSide = false;
     boolean blackQueenSide = false;
-    
+    boolean reFreshAttemp = false;
     // Socket communication
     private PrintWriter out;
     private BufferedReader in;
 	//User Infor
 	String userId = UserSession.getInstance().getUserId();
-	
+	String userName = UserSession.getInstance().getUserName();
 	//CHESS BOARD
 	char[][] chessBoard = {
 	        {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
@@ -113,9 +114,10 @@ public class GamePanel extends JPanel implements Runnable {
 	boolean promotion;
 	boolean gameover;
 	boolean stalemate;
+	boolean startGame = false;
 	int currentColor = WHITE;
 	boolean onlineMode = false;
-	
+	boolean roleSetted = false;
 	String playerRole;
 	//constructor
 	public GamePanel(String id) {
@@ -132,13 +134,6 @@ public class GamePanel extends JPanel implements Runnable {
 		}
 		setPieces();
 		copyPieces(pieces, simPieces);
-        if(onlineMode) {
-        	playOnline();
-        }
-        connectButton = new JButton("CONNECT");
-        connectButton.addActionListener(new ConnectButtonListener());
-        connectButton.setBounds(1100, 52, 80, 30);
-        add(connectButton);
 	}
 	public void playOnline() {
 		this.onlineMode = true;
@@ -154,26 +149,50 @@ public class GamePanel extends JPanel implements Runnable {
                 
                 // Nhận phản hồi từ server và xử lý
                 String response;
+               
                 while ((response = in.readLine()) != null) {
-                	if (!response.trim().startsWith("{")) {
-                		playerRole = response;
-                		System.out.println(playerRole + "First");
-                	}
-                	else {
-                    System.out.println("Server says: " + response);
-                    JSONObject moveData = new JSONObject(response);
-                    JSONArray piecesArray = moveData.getJSONArray("data");
-                    currentColor = moveData.getInt("currentColor");
-                    pieces.clear();
-                    for (int i = 0; i < piecesArray.length(); i++) {
-                        JSONObject pieceJson = piecesArray.getJSONObject(i);
-                        Piece piece = Piece.fromJson(pieceJson);
-                        if(piece instanceof Pawn) {
-                        	piece.twoStepped = true;
-                        }
-                        pieces.add(piece);
-                    }    
-                    copyPieces(pieces, simPieces);
+                	 if (!response.trim().startsWith("{") && !roleSetted) {
+                		 roleSetted=true;
+                	        // Kiểm tra và cập nhật vai trò của người chơi
+                	        playerRole = response;
+                	        System.out.println(playerRole + "First");
+                	    } else {
+                	        // Xử lý phản hồi từ máy chủ
+                	        if (response.equalsIgnoreCase("true")) {
+                	            // Kiểm tra và cập nhật trạng thái bắt đầu trò chơi
+                	            startGame = true;
+                	        } else {
+                	            // Xử lý dữ liệu JSON từ máy chủ
+                	            JSONObject moveData = new JSONObject(response);
+                	            JSONArray piecesArray = moveData.getJSONArray("data");
+                	            currentColor = moveData.getInt("currentColor");
+                	            
+                	            // Xóa danh sách các quân cờ hiện có và cập nhật lại
+                	            pieces.clear();
+                	            for (int i = 0; i < piecesArray.length(); i++) {
+                	                JSONObject pieceJson = piecesArray.getJSONObject(i);
+                	                Piece piece = Piece.fromJson(pieceJson);
+                	                if (!(piece instanceof Pawn && (piece.row == 7 || piece.row == 0))) {
+                	                    pieces.add(piece);
+                	                }
+                	            }
+                	            
+                	            // Sao chép danh sách quân cờ để sử dụng
+                	            copyPieces(pieces, simPieces);	
+                	            
+                	            // Kiểm tra và cập nhật trạng thái kết thúc trò chơi
+                	            if (isKingInCheck() && isCheckmate()) {
+                	            	if (currentColor == WHITE && playerRole.equals("white")) { 									
+    									callAPIBonusMarkUser(userId, "100");   									
+    								}
+                	            	else if(currentColor == BLACK && playerRole.equals("black")) {
+                	            		callAPIBonusMarkUser(userId, "100");  
+                	            	}
+                	                gameover = true;
+                	            } else if (isStalemate() && !isKingInCheck()) {
+                	                stalemate = true;
+                	            }
+                	        }
                 	}
                 }
             } catch (IOException ex) {
@@ -191,43 +210,6 @@ public class GamePanel extends JPanel implements Runnable {
 	}
 	
 	
-	// Listener for the connect button
-    private class ConnectButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            new Thread(() -> {
-                try {
-                    Socket socket = new Socket("127.0.0.1", 12345); // Địa chỉ IP và cổng của server
-                    out = new PrintWriter(socket.getOutputStream(), true);
-                    in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    
-                    // Gửi thông điệp chào mừng tới server
-                    out.println("Client connected");
-                    
-                    // Nhận phản hồi từ server và xử lý
-                    String response;
-                    while ((response = in.readLine()) != null) {
-                        System.out.println("Server says: " + response);
-                        JSONObject moveData = new JSONObject(response);
-                        JSONArray piecesArray = moveData.getJSONArray("data");
-                        currentColor = moveData.getInt("currentColor");
-                        pieces.clear();
-                        for (int i = 0; i < piecesArray.length(); i++) {
-                            JSONObject pieceJson = piecesArray.getJSONObject(i);
-                            Piece piece = Piece.fromJson(pieceJson);
-                            if(piece instanceof Pawn) {
-                            	piece.twoStepped = true;
-                            }
-                            pieces.add(piece);
-                        }    
-                        copyPieces(pieces, simPieces);
-                    }
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }).start();
-        }
-    }
     
     
     
@@ -721,7 +703,7 @@ private void sendPutRequest(String json, String id) {
        		// Tạo JSON từ dữ liệu di chuyển
 	        JSONObject moveData = new JSONObject();
 	        JSONArray jsonArray = new JSONArray();
-	        for (Piece piece1 : pieces) {
+	        for (Piece piece1 : simPieces) {
 	            jsonArray.put(piece1.toJson());
 	        }
 	        moveData.put("data", jsonArray);
@@ -740,6 +722,8 @@ private void sendPutRequest(String json, String id) {
 	
 	
 	private void update() {
+		if(onlineMode && !startGame)
+			return;
 		//Mouse Button PRESSED	
 		if (playerTurn == true) {
 			if(promotion) {
@@ -756,8 +740,9 @@ private void sendPutRequest(String json, String id) {
 	                                piece.col == mouse.x / Board.SQUARE_SIZE &&
 	                                piece.row == mouse.y / Board.SQUARE_SIZE )	                                                    
 									{
-										if(!onlineMode) 
-										activeP = piece;
+										if(!onlineMode) {
+											activeP = piece;
+										}
 										else {
 											if(((playerRole.equals("white") && piece.color == WHITE) || 
 	                                 (playerRole.equals("black") && piece.color != WHITE)))  {
@@ -774,7 +759,8 @@ private void sendPutRequest(String json, String id) {
 				}
 				//Mouse Button RLEASED
 				if(mouse.pressed == false) {
-					if(activeP !=null) {
+	
+					if(activeP !=null) {			
 						System.out.println("VALID: "+ validSquare);
 						if(validSquare) {
 							 Piece dummy = activeP;
@@ -1247,6 +1233,7 @@ private void sendPutRequest(String json, String id) {
 					default: break;
 					}
 					simPieces.remove(activeP.getIndex());
+					System.out.println(activeP.type);
 					copyPieces(simPieces, pieces);
 					activeP = null;
 					promotion = false;
@@ -1321,7 +1308,7 @@ private void sendPutRequest(String json, String id) {
 	
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
-		
+
 		Graphics2D g2 = (Graphics2D)g;
 		//Draw the board
 		board.draw(g2);
@@ -1355,6 +1342,18 @@ private void sendPutRequest(String json, String id) {
 		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 		g2.setFont(new Font("Book Antiqua", Font.PLAIN, 40));
 		g2.setColor(Color.white);
+		if(!startGame && onlineMode) {
+			FontMetrics fm = g2.getFontMetrics();
+			int stringWidth = fm.stringWidth("Waiting for 1 more player");
+
+			int x = (getWidth() - stringWidth) / 2; 
+			int y = getHeight() / 2; 
+
+			g2.drawString("Waiting for 1 more player", x, y);
+		}
+		else if(onlineMode && startGame) {
+			g2.drawString("Game started", 840, 350);
+		}
 		if(promotion) {
 			g2.drawString("Promote to:", 840, 150);
 			for(Piece piece: promoPieces) {
@@ -1363,7 +1362,17 @@ private void sendPutRequest(String json, String id) {
 		}
 		else {
 			if(currentColor == WHITE) {
-				g2.drawString("White's Turn", 840, 550);
+				if(onlineMode && playerRole != null) {
+					if(playerRole.equals("white")){
+						g2.drawString("Your Turn", 840, 550);
+					}
+					else {
+						g2.drawString("Enemy's Turn", 840, 550);
+					}
+				}
+				else {
+					g2.drawString("White's Turn", 840, 550);
+				}
 				if(checkingP != null && checkingP.color == BLACK && validSquare == false) {
 					g2.setColor(Color.red);
 
@@ -1372,7 +1381,18 @@ private void sendPutRequest(String json, String id) {
 					g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,1f));
 				}
 			}else {
-				g2.drawString("Black's Turn", 840, 250);
+				if(onlineMode && playerRole != null) {
+					if(playerRole.equals("black")){
+						g2.drawString("Your Turn", 840, 250);
+					}
+					else {
+						g2.drawString("Enemy's Turn", 840, 250);
+					}
+				}
+				else {
+					g2.drawString("Black's Turn", 840, 250);
+				}
+		
 				if(checkingP != null && checkingP.color == WHITE && validSquare == false) {
 					g2.setColor(Color.red);
 					g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,0.7f));
