@@ -24,7 +24,7 @@ public class Register extends JPanel implements Runnable {
     private JLabel errorLabel;
     private Runnable onSuccess;
     private Runnable onBackToLogin;
-
+    
     public Register(Runnable onSuccess, Runnable onBackToLogin) {
         this.onSuccess = onSuccess;
         this.onBackToLogin = onBackToLogin;

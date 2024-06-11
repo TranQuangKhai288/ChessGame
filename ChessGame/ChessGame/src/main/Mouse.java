@@ -14,7 +14,7 @@ public class Mouse extends MouseAdapter {
 	public void mousePressed(MouseEvent e) {
 		pressed = true;
 	}
-	
+		
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		pressed = false;
