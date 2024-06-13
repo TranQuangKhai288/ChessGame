@@ -47,13 +47,15 @@ public class ChessServer {
         }
     }
     public void handleMessageFromClient(String receivedData, ChessClientHandler sender) throws IOException {
-        // Xử lý dữ liệu nhận được từ Client A hoặc Client B
 		JSONObject receivedJson = new JSONObject(receivedData);
-		// Gửi dữ liệu đến cả hai loại client
+
 		for (ChessClientHandler client : clients) {		
 		    if (client != sender) {
+		    	System.out.println("Sending data to client: " + client.getSocket());
 		        client.sendMessage(receivedData);
-		    }
+		    }else {
+	            System.out.println("Not sending data to sender client: " + client.getSocket());
+	        }
 		}
     }
 

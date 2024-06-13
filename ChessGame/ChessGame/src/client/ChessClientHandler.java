@@ -34,15 +34,9 @@ public class ChessClientHandler implements Runnable {
             out.println(role);
             String inputLine;
             while ((inputLine = in.readLine()) != null) {
-            	if (inputLine.trim().startsWith("{")) {
-                    // Phân tích dữ liệu từ client
+            	if (inputLine.trim().startsWith("{")) { 
                     JSONObject moveData = new JSONObject(inputLine);
                     out.println(moveData.toString());	
-                    // Xử lý di chuyển quân cờ
-                    // Ví dụ: cập nhật trạng thái của bảng cờ và kiểm tra tính hợp lệ của nước đi
-
-                    // Phản hồi cho client (nếu cần)
-                    // Ví dụ: gửi thông báo xác nhận về việc di chuyển quân cờ thành công
                     server.handleMessageFromClient(inputLine, this);
             	}	
             }
@@ -55,7 +49,7 @@ public class ChessClientHandler implements Runnable {
     	out.println(state);
     }
     public void sendMessage(String message) {
-    	System.out.println(message+ "  this is where it sended");
+    	System.out.println(message+ " this is where it sended");
         out.println(message);
     }
 }

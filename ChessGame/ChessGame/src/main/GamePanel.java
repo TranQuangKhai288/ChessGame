@@ -2,6 +2,7 @@ package main;
 
 
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
@@ -16,6 +17,7 @@ import piece.Queen;
 import piece.Rook;
 
 import java.awt.AlphaComposite;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -46,6 +48,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import javax.swing.SwingConstants;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+
+
 
 //class for create VIEW of game
 public class GamePanel extends JPanel implements Runnable {
@@ -69,6 +79,16 @@ public class GamePanel extends JPanel implements Runnable {
 	//User Infor
 	String userId = UserSession.getInstance().getUserId();
 	String userName = UserSession.getInstance().getUserName();
+	
+	//Timer
+	private Timer timer;
+	private TimerTask timerTask;
+	private static final int TURN_TIME_LIMIT = 10; // Thời gian giới hạn cho mỗi lượt đi là 300 giây (5 phút)
+	private JLabel timerLabel; 
+	private int timeRemaining;
+	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+	public int timeTurn = 30;
+    private int counter = timeTurn;
 	//CHESS BOARD
 	char[][] chessBoard = {
 	        {'r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'},
@@ -84,7 +104,7 @@ public class GamePanel extends JPanel implements Runnable {
 	//PIECES
 	public static ArrayList<Piece> pieces = new ArrayList<>();
 	public Piece wKing, wRookKingSide, wRookQueenSide, bKing, bRookKingSide, bRookQueenSide;
-	
+
 	
 	//this array will contain the pieces currently on the board
 	//use this array
@@ -121,6 +141,7 @@ public class GamePanel extends JPanel implements Runnable {
 	String playerRole;
 	//constructor
 	public GamePanel(String id) {
+		
 		this.id = id;
         setLayout(null);
 		setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -132,9 +153,39 @@ public class GamePanel extends JPanel implements Runnable {
 		if(id != null) {
 			initSaveButton();
 		}
+		timerLabel = new JLabel();
+	    timerLabel.setFont(new Font("Arial", Font.BOLD, 24));
+	    add(timerLabel, BorderLayout.SOUTH);
+	    this.startInterval(1000);
+	    
+	 
 		setPieces();
 		copyPieces(pieces, simPieces);
 	}
+	  public void startInterval(int intervalMilliseconds) {
+	        scheduler.scheduleAtFixedRate(new Runnable() {
+	            @Override
+	            public void run() {
+	                // Code to be executed at each interval
+
+	            	if(counter > 0) {
+	            	timerLabel.setText("time: "+String.valueOf(counter)+"s");
+	                counter--;
+	            	}
+	                System.out.println("Interval " + counter);
+	             
+	                if(counter == 0) {
+	                	if(!gameover) {
+	                	currentColor = currentColor == 0 ? 1 : 0;
+	                	}
+	                	gameover = true;
+	                }
+	            }
+	        }, 0, intervalMilliseconds, TimeUnit.MILLISECONDS);
+	    }
+	  public void stopInterval() {
+	        scheduler.shutdown();
+	    }
 	public void playOnline() {
 		this.onlineMode = true;
 		System.out.println("try connect");
@@ -143,8 +194,7 @@ public class GamePanel extends JPanel implements Runnable {
                 Socket socket = new Socket("127.0.0.1", 12345); // Địa chỉ IP và cổng của server
                 out = new PrintWriter(socket.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                
-                // Gửi thông điệp chào mừng tới server
+                 
                 out.println("Client connected");
                 
                 // Nhận phản hồi từ server và xử lý
@@ -153,20 +203,23 @@ public class GamePanel extends JPanel implements Runnable {
                 while ((response = in.readLine()) != null) {
                 	 if (!response.trim().startsWith("{") && !roleSetted) {
                 		 roleSetted=true;
-                	        // Kiểm tra và cập nhật vai trò của người chơi
+                	        
                 	        playerRole = response;
                 	        System.out.println(playerRole + "First");
                 	    } else {
                 	        // Xử lý phản hồi từ máy chủ
-                	        if (response.equalsIgnoreCase("true")) {
-                	            // Kiểm tra và cập nhật trạng thái bắt đầu trò chơi
+                	        if (response.equalsIgnoreCase("true")) {       	            
                 	            startGame = true;
                 	        } else {
                 	            // Xử lý dữ liệu JSON từ máy chủ
                 	            JSONObject moveData = new JSONObject(response);
                 	            JSONArray piecesArray = moveData.getJSONArray("data");
                 	            currentColor = moveData.getInt("currentColor");
-                	            
+                	            if(moveData.has("checkingP") && !moveData.isNull("checkingP")) {
+                	            	JSONObject checkingPJson = moveData.getJSONObject("checkingP");
+                	            	checkingP = Piece.fromJson(checkingPJson);
+                	            	repaint();
+                	            }
                 	            // Xóa danh sách các quân cờ hiện có và cập nhật lại
                 	            pieces.clear();
                 	            for (int i = 0; i < piecesArray.length(); i++) {
@@ -210,8 +263,13 @@ public class GamePanel extends JPanel implements Runnable {
 	}
 	
 	
-    
-    
+  
+	private String formatTime(int seconds) {
+	    int minutes = seconds / 60;
+	    int secs = seconds % 60;
+	    return String.format("%02d:%02d", minutes, secs);
+	}
+
     
 	private void initSaveButton() {
 		 saveButton = new JButton("SAVE");
@@ -683,7 +741,7 @@ private void sendPutRequest(String json, String id) {
 		double delta = 0;
 		long lastTime = System.nanoTime();
 		long currentTime;
-		
+		long startTime = System.currentTimeMillis();
 		
 		while(gameThread !=null) {
 			currentTime = System.nanoTime();
@@ -694,9 +752,16 @@ private void sendPutRequest(String json, String id) {
 				repaint();
 				delta--;
 			}
+			long elapsedTime = System.currentTimeMillis() - startTime;
+            if (elapsedTime >= 5 * 60 * 1000) { // 5 phút (tính bằng mili giây)
+                performAction(); // Gọi phương thức khi hết giờ
+                startTime = System.currentTimeMillis(); // Reset bộ đếm cho lần sau
+            }
 		}
 	}
-	
+	public void performAction() {
+		
+	}
 	public void movePiece() {
 		if(onlineMode) {
 			System.out.print(playerRole);
@@ -708,6 +773,9 @@ private void sendPutRequest(String json, String id) {
 	        }
 	        moveData.put("data", jsonArray);
 	        moveData.put("currentColor", currentColor);
+	        if(checkingP != null) {
+	        	moveData.put("checkingP", checkingP.toJson());
+	        }
 
 	        
 	        String jsonMove = moveData.toString();
@@ -759,7 +827,7 @@ private void sendPutRequest(String json, String id) {
 				}
 				//Mouse Button RLEASED
 				if(mouse.pressed == false) {
-	
+					
 					if(activeP !=null) {			
 						System.out.println("VALID: "+ validSquare);
 						if(validSquare) {
@@ -1181,28 +1249,32 @@ private void sendPutRequest(String json, String id) {
 		return isValidMove;
 	}
 	
- 	private void changePlayer() {
-		if(currentColor == WHITE) {
-			currentColor = BLACK;
-			// reset black's two stepped status
-			for(Piece piece : pieces) {
-				if(piece.color ==BLACK) {
-					piece.twoStepped = false;
-				}
-			}
-		}else {
-			currentColor = WHITE;
-			for(Piece piece : pieces) {
-				if(piece.color == WHITE) {
-					piece.twoStepped = false;
-				}
-			}
-		}
+	private void changePlayer() {
+		counter = timeTurn;
+	    if (currentColor == WHITE) {
+	        currentColor = BLACK;
+	        // reset black's two stepped status
+	        for(Piece piece : pieces) {
+	            if(piece.color == BLACK) {
+	                piece.twoStepped = false;
+	            }
+	        }
+	    } else {
+	        currentColor = WHITE;
+	        for(Piece piece : pieces) {
+	            if(piece.color == WHITE) {
+	                piece.twoStepped = false;
+	            }
+	        }
+	    }
 
-		activeP = null;
-			
-		if(modeAI == 1)
-			playerTurn = !playerTurn;
+	    activeP = null;
+
+	    if (modeAI == 1)
+	        playerTurn = !playerTurn;
+
+	    // Khởi động lại bộ đếm thời gian cho người chơi mới
+
 	}
 	
 	private boolean canPromote() {
@@ -1365,14 +1437,17 @@ private void sendPutRequest(String json, String id) {
 				if(onlineMode && playerRole != null) {
 					if(playerRole.equals("white")){
 						g2.drawString("Your Turn", 840, 550);
+						
 					}
 					else {
 						g2.drawString("Enemy's Turn", 840, 550);
 					}
 				}
 				else {
+					
 					g2.drawString("White's Turn", 840, 550);
 				}
+				g2.drawString("Time: " + String.valueOf(counter)+ "s",840,650 );
 				if(checkingP != null && checkingP.color == BLACK && validSquare == false) {
 					g2.setColor(Color.red);
 
@@ -1381,6 +1456,7 @@ private void sendPutRequest(String json, String id) {
 					g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,1f));
 				}
 			}else {
+				g2.drawString("Time: " + String.valueOf(counter)+ "s",840,650 );
 				if(onlineMode && playerRole != null) {
 					if(playerRole.equals("black")){
 						g2.drawString("Your Turn", 840, 250);
@@ -1419,6 +1495,6 @@ private void sendPutRequest(String json, String id) {
 			g2.setColor(Color.lightGray);
 			g2.drawString("Tie", 200, 420);
 		}
-		
+	
 	}
 }
